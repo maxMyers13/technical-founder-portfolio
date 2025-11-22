@@ -9,7 +9,7 @@ const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-2 text-brightBlue">
           <Terminal size={20} />
-          <span className="font-mono font-bold tracking-tight text-white">DEVON_K</span>
+          <span className="font-mono font-bold tracking-tight text-white">Max_M</span>
         </div>
 
         {/* Desktop Menu */}

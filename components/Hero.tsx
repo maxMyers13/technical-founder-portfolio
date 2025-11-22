@@ -47,7 +47,7 @@ const Hero: React.FC = () => {
                <Database size={18} /> <span className="font-mono text-xs">Infra</span>
             </div>
             <div className="flex items-center gap-2">
-               <Layers size={18} /> <span className="font-mono text-xs">System Design</span>
+               <Layers size={18} /> <span className="font-mono text-xs">Chromium</span>
             </div>
           </div>
         </div>
