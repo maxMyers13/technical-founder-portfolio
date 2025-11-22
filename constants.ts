@@ -13,43 +13,43 @@ export const HERO_PROJECTS: Project[] = [
   {
     id: 'p2',
     title: 'Adaptive Learning Platform',
-    description: 'AI-driven curriculum adjustment engine handling 50k concurrent websocket connections.',
-    techStack: ['Go', 'gRPC', 'Redis'],
+    description: 'WebAssembly-powered coding projects that run Python tests directly in the browser for instant feedback. Go + MongoDB backend that logs every submission and completion for progress tracking and analytics. Scales from a single learner to tens of thousands of concurrent sessions without adding server execution load.',
+    techStack: ['Go', 'WASM', 'Typescript'],
     category: 'Product',
-    image: 'https://picsum.photos/600/400?random=2',
-    link: '#',
+    image: 'public/metrics.png',
+    link: 'https://github.com/microsoft/adaptive-learning-platform',
   },
   {
     id: 'p3',
-    title: 'Conversational Media Telemetry',
-    description: 'Natural-language telemetry assistant integrating Titan MCP with an LLM-driven orchestrator. Enables engineers to ask questions like “What’s causing PlayReady failures this week?” and receive real Titan query results with clear, structured explanations.',
+    title: 'Chromium Media Telemetry Copilot',
+    description: 'Natural-language telemetry assistant integrating Titan MCP with an LLM-driven orchestrator. Enables engineers to ask questions like "What’s causing PlayReady failures this week?" and receive real Titan query results with clear, structured explanations.',
     techStack: ['Typescript', 'VSCode', 'LLM'],
     category: 'WebAssembly',
-    image: 'https://picsum.photos/600/400?random=3',
-    link: '#',
+    image: 'public/Microsoft Hackathon Demo.png',
+    link: 'https://github.com/microsoft/chromium-media-telemetry-copilot',
   },
 ];
 
 export const FEATURED_PROJECTS: Project[] = [
   ...HERO_PROJECTS,
-  {
-    id: 'p4',
-    title: 'Distributed Log Mesh',
-    description: 'A decentralized logging architecture ensuring zero-loss data ingestion during partition events.',
-    techStack: ['Elixir', 'Kafka', 'ClickHouse'],
-    category: 'Infrastructure',
-    image: 'https://picsum.photos/600/400?random=4',
-    link: '#',
-  },
-  {
-    id: 'p5',
-    title: 'Semantic Code Search',
-    description: 'Vector-based code search tool allowing natural language queries over large monorepos.',
-    techStack: ['Python', 'PyTorch', 'Postgres'],
-    category: 'AI',
-    image: 'https://picsum.photos/600/400?random=5',
-    link: '#',
-  },
+  // {
+  //   id: 'p4',
+  //   title: 'Distributed Log Mesh',
+  //   description: 'A decentralized logging architecture ensuring zero-loss data ingestion during partition events.',
+  //   techStack: ['Elixir', 'Kafka', 'ClickHouse'],
+  //   category: 'Infrastructure',
+  //   image: 'https://picsum.photos/600/400?random=4',
+  //   link: '#',
+  // },
+  // {
+  //   id: 'p5',
+  //   title: 'Semantic Code Search',
+  //   description: 'Vector-based code search tool allowing natural language queries over large monorepos.',
+  //   techStack: ['Python', 'PyTorch', 'Postgres'],
+  //   category: 'AI',
+  //   image: 'https://picsum.photos/600/400?random=5',
+  //   link: '#',
+  // },
 ];
 
 export const SPEAKING_DATA: SpeakingEngagement[] = [
@@ -79,17 +79,17 @@ export const SPEAKING_DATA: SpeakingEngagement[] = [
 export const RESOURCES: Resource[] = [
   {
     id: 'r1',
-    title: 'Scaling Engineering Teams',
-    description: 'A GitBook heavily documenting our SOPs for hiring, onboarding, and incident response.',
+    title: 'How to Tailor Your Resume',
+    description: 'A GitBook heavily documenting how to tailor your resume for each company you apply to.',
     type: 'GitBook',
-    link: '#',
+    link: 'https://www.linkedin.com/pulse/important-tailor-your-resume-maxwell-myers-3suqc',
   },
   {
     id: 'r2',
     title: 'LLM Prompt Cookbook',
     description: 'Curated recipes for structured data extraction using Gemini and other models.',
     type: 'Cookbook',
-    link: '#',
+    link: 'https://lilo.gitbook.io/lilocookbook',
   },
   {
     id: 'r3',

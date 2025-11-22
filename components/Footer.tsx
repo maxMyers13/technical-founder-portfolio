@@ -35,7 +35,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs font-mono text-slate-600">
-          <p>&copy; {new Date().getFullYear()} Devon K. All systems nominal.</p>
+          <p>&copy; {new Date().getFullYear()} Max M. All systems nominal.</p>
           <p>Built with React + Tailwind + &lt;3</p>
         </div>
       </div>
