@@ -7,7 +7,7 @@ export const HERO_PROJECTS: Project[] = [
     description: 'High-performance text search within rendered DOM elements using shadow-root traversal.',
     techStack: ['C++', 'Chromium', 'Browser API'],
     category: 'Infrastructure',
-    image: 'public/webview2Logo.png',
+    image: '/webview2Logo.png',
     link: 'https://github.com/MicrosoftEdge/WebView2Feedback/blob/api-findonpage/FindOnPage.md',
   },
   {
@@ -16,7 +16,7 @@ export const HERO_PROJECTS: Project[] = [
     description: 'WebAssembly-powered coding projects that run Python tests directly in the browser for instant feedback. Go + MongoDB backend that logs every submission and completion for progress tracking and analytics. Scales from a single learner to tens of thousands of concurrent sessions without adding server execution load.',
     techStack: ['Go', 'WASM', 'Typescript'],
     category: 'Product',
-    image: 'public/metrics.png',
+    image: '/metrics.png',
     link: 'https://github.com/microsoft/adaptive-learning-platform',
   },
   {
@@ -25,7 +25,7 @@ export const HERO_PROJECTS: Project[] = [
     description: 'Natural-language telemetry assistant integrating Titan MCP with an LLM-driven orchestrator. Enables engineers to ask questions like "What’s causing PlayReady failures this week?" and receive real Titan query results with clear, structured explanations.',
     techStack: ['Typescript', 'VSCode', 'LLM'],
     category: 'WebAssembly',
-    image: 'public/Microsoft Hackathon Demo.png',
+    image: '/Microsoft Hackathon Demo.png',
     link: 'https://github.com/microsoft/chromium-media-telemetry-copilot',
   },
 ];
