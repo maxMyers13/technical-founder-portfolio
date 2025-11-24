@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
             Whether it's systems architecture, team scaling, or just nerding out about WebAssembly.
           </p>
           <a 
-            href="mailto:hello@example.com"
+            href="mailto:collab@linkedinorleftout.com"
             className="inline-block bg-white text-inkNavy px-8 py-4 font-mono font-bold text-lg rounded-sm hover:bg-brightBlue hover:text-white transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,117,255,0.4)]"
           >
             Initiate_Contact()
