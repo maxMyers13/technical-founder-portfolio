@@ -3,10 +3,15 @@ export interface Project {
   title: string;
   description: string;
   techStack: string[];
-  category: 'Browser Platform' | 'Product';
+  category: 'Browser Platform' | 'Product' | 'Talks/Writing';
   image: string;
   link: string;
   linkText: string;
+}
+
+export interface SpeakingLink {
+  url: string;
+  label: string;
 }
 
 export interface SpeakingEngagement {
@@ -14,7 +19,11 @@ export interface SpeakingEngagement {
   event: string;
   title: string;
   description: string;
-  recordingUrl: string;
+  primaryLink: SpeakingLink;
+  secondaryLink?: SpeakingLink;
+  previewImage?: string;
+  secondaryPreviewImage?: string;
+  featured?: boolean;
 }
 
 export interface Resource {

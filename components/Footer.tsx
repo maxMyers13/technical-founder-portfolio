@@ -40,7 +40,7 @@ const Footer: React.FC = () => {
           <a href="https://www.linkedin.com/in/maxwellmyers1/" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-[#0077b5] hover:scale-110 transition-all">
             <Linkedin size={24} />
           </a>
-          <a href="https://x.com/maxMyers13" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-[#1DA1F2] hover:scale-110 transition-all">
+          <a href="https://x.com/wmMaxm" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-[#1DA1F2] hover:scale-110 transition-all">
             <Twitter size={24} />
           </a>
           <a href="mailto:max@learnwleo.com" className="text-slate-500 hover:text-red-400 hover:scale-110 transition-all">

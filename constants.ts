@@ -45,6 +45,17 @@ export const FEATURED_PROJECTS: Project[] = [
     link: 'https://blogs.windows.com/msedgedev/2022/05/18/find-and-manage-your-installed-apps-and-sites/',
     linkText: 'Read announcement',
   },
+  {
+    id: 'p5',
+    title: 'Killing the Cloud Sandbox (SRE Day 2026)',
+    description:
+      'Technical talk on moving language runtimes and AI inference from cloud servers to the student browser via WebAssembly. Covers the cost model, the Java/CheerpJ workaround, and on-device AI tutor economics.',
+    techStack: ['WebAssembly', 'EdgeAI', 'Talk'],
+    category: 'Talks/Writing',
+    image: '/assets/talks/previews/killing-cloud-sandbox-projected-costs.png',
+    link: 'https://youtu.be/uVoWMcnwAAE',
+    linkText: 'Watch the talk',
+  },
 ];
 
 export const HERO_PROJECTS: Project[] = FEATURED_PROJECTS.slice(0, 3);
@@ -52,11 +63,33 @@ export const HERO_PROJECTS: Project[] = FEATURED_PROJECTS.slice(0, 3);
 export const SPEAKING_DATA: SpeakingEngagement[] = [
   {
     id: 's1',
-    event: 'SRE Day 2026 (Austin and Seattle)',
+    event: 'SRE Day 2026 (Seattle + Austin) | Invited Speaker',
     title: 'Killing the Cloud Sandbox',
     description:
-      'Invited speaker. A technical talk on running language runtimes and AI inference entirely client-side via WebAssembly to eliminate per-user cloud execution cost.',
-    recordingUrl: 'https://youtu.be/uVoWMcnwAAE',
+      'How we moved language runtimes and AI inference off cloud servers and into the student browser via WebAssembly, eliminating per-execution cost. Includes the cost model, the Java challenge, and the on-device AI economics.',
+    primaryLink: {
+      url: 'https://youtu.be/uVoWMcnwAAE',
+      label: 'Watch the talk',
+    },
+    secondaryLink: {
+      url: '/assets/talks/KillingTheCloudSandbox-Seattle.pdf',
+      label: 'Download slides',
+    },
+    previewImage: '/assets/talks/previews/killing-cloud-sandbox-projected-costs.png',
+    secondaryPreviewImage: '/assets/talks/previews/killing-cloud-sandbox-fork-in-road.png',
+    featured: true,
+  },
+  {
+    id: 's2',
+    event: 'Techsgiving Workshop, November 2025 | Invited Speaker',
+    title: 'AI Resumes That Land Interviews',
+    description:
+      'A 15-minute AI-driven workflow for tailoring resumes to job descriptions without fabricating metrics.',
+    primaryLink: {
+      url: '/assets/talks/Techsgiving-Workshop.pdf',
+      label: 'Download slides',
+    },
+    featured: false,
   },
 ];
 
