@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Github } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { FEATURED_PROJECTS } from '../constants';
 import Card from './ui/Card';
 
@@ -14,7 +14,7 @@ const Projects: React.FC = () => {
         <span className="hidden md:block text-xs font-mono text-slate-600">Total: {FEATURED_PROJECTS.length} items</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {FEATURED_PROJECTS.map((project) => (
           <Card key={project.id} className="h-full flex flex-col">
             <div className="relative h-48 mb-6 overflow-hidden rounded-sm bg-slate-900 border border-slate-800 group-hover:border-slate-700">
@@ -45,11 +45,15 @@ const Projects: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-800/50 mt-auto">
-               <a href={project.link} className="flex items-center gap-2 text-sm font-medium text-white hover:text-accentPurple transition-colors">
-                 View Project <ExternalLink size={14} />
+            <div className="pt-4 border-t border-slate-800/50 mt-auto">
+               <a
+                 href={project.link}
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="flex items-center gap-2 text-sm font-medium text-white hover:text-accentPurple transition-colors"
+               >
+                 {project.linkText} <ExternalLink size={14} />
                </a>
-               <Github size={16} className="text-slate-600 hover:text-white transition-colors cursor-pointer" />
             </div>
           </Card>
         ))}

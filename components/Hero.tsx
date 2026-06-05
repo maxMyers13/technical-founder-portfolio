@@ -23,19 +23,19 @@ const Hero: React.FC = () => {
           </h1>
           
           <p className="text-xl text-slate-400 max-w-2xl leading-relaxed">
-            No matter how complex they are underneath. Technical Founder & Full-stack Engineer specializing in Browser Internals, AI, and WebAssembly.
+            No matter how complex they are underneath. Technical founder. Previously shipped browser-platform features at Microsoft. Now building LILO, a coding-education platform that runs all execution and AI inference on-device via WebAssembly.
           </p>
 
           <div className="flex flex-wrap gap-4 pt-4">
-             <button className="group relative px-6 py-3 bg-brightBlue text-white font-mono text-sm font-semibold overflow-hidden rounded-sm">
+             <a href="#work" className="group relative px-6 py-3 bg-brightBlue text-white font-mono text-sm font-semibold overflow-hidden rounded-sm inline-block">
                 <span className="relative z-10 flex items-center gap-2">
                   Explore Projects <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </span>
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-             </button>
-             <button className="px-6 py-3 border border-slate-700 text-slate-300 font-mono text-sm hover:border-slate-500 hover:text-white transition-colors rounded-sm">
+             </a>
+             <a href="#about" className="px-6 py-3 border border-slate-700 text-slate-300 font-mono text-sm hover:border-slate-500 hover:text-white transition-colors rounded-sm inline-block">
                 Read Documentation
-             </button>
+             </a>
           </div>
           
           {/* Tech Stack Badges */}
@@ -57,14 +57,22 @@ const Hero: React.FC = () => {
            <div className="absolute -inset-4 bg-gradient-to-b from-brightBlue/10 to-transparent blur-2xl -z-10" />
            
            {HERO_PROJECTS.map((project, index) => (
-             <Card key={project.id} className={`transform ${index === 1 ? 'lg:-translate-x-8' : ''}`}>
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-mono text-brightBlue uppercase">{project.category}</span>
-                  <ArrowRight size={14} className="text-slate-600 -rotate-45" />
-                </div>
-                <h3 className="text-lg font-bold text-white mb-1">{project.title}</h3>
-                <p className="text-sm text-slate-400 line-clamp-2">{project.description}</p>
-             </Card>
+             <a 
+               key={project.id}
+               href={project.link}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="block"
+             >
+               <Card className={`transform ${index === 1 ? 'lg:-translate-x-8' : ''} h-full`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-mono text-brightBlue uppercase">{project.category}</span>
+                    <ArrowRight size={14} className="text-slate-600 -rotate-45 group-hover:text-brightBlue group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-1">{project.title}</h3>
+                  <p className="text-sm text-slate-400 line-clamp-2">{project.description}</p>
+               </Card>
+             </a>
            ))}
         </div>
       </div>

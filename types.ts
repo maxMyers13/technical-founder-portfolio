@@ -3,17 +3,18 @@ export interface Project {
   title: string;
   description: string;
   techStack: string[];
-  category: 'Infrastructure' | 'AI' | 'WebAssembly' | 'Product';
+  category: 'Browser Platform' | 'Product';
   image: string;
   link: string;
+  linkText: string;
 }
 
 export interface SpeakingEngagement {
   id: string;
   event: string;
   title: string;
-  date: string;
-  type: 'Keynote' | 'Workshop' | 'Panel';
+  description: string;
+  recordingUrl: string;
 }
 
 export interface Resource {

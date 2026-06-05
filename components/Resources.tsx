@@ -11,7 +11,7 @@ const Resources: React.FC = () => {
         <div className="h-1 w-20 bg-gradient-to-r from-brightBlue to-accentPurple mx-auto mt-4 rounded-full"></div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
         {RESOURCES.map((resource) => (
           <Card key={resource.id} className="bg-[#010514]">
              <div className="mb-4 p-3 bg-slate-900/50 w-fit rounded-md border border-slate-800">
