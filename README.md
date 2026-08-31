@@ -21,10 +21,5 @@ View your app in AI Studio: https://ai.studio/apps/drive/1TRBj8X0671kWPYl6LgkQb_
 
 ## Assets
 
-`public/assets/` holds everything the site renders: talk slides, the LILO
-metrics screenshot, the hackathon demo, and the two slide PDFs.
-
-One file is not in the repo — drop your own copy in before deploying:
-
-- `public/assets/max-portrait.jpeg` — the portrait used on the home hero and
-  the Life sidebar.
+`public/assets/` holds everything the site renders: the portrait, talk slides,
+the LILO metrics screenshot, the hackathon demo, and the two slide PDFs.
