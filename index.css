@@ -1,22 +1,229 @@
+/* ===========================================================
+   Max Runtime v2 — global tokens, reset and responsive rules.
+   Ported from the Claude Design source (Max Runtime v2.dc.html).
+   Every screen styles itself inline; this file owns the theme
+   tokens, the element reset, hover states and the mobile pass.
+   =========================================================== */
+
+:root {
+  --bg: #ffffff;
+  --bg2: #f7fafc;
+  --ink: #18181b;
+  --body: #4a5568;
+  --mute: #71717a;
+  --line: #e2e8f0;
+  --hair: #d1d5db;
+  --nav: rgba(255, 255, 255, 0.92);
+  --card: #ffffff;
+  --shadow: 0 24px 48px -28px rgba(24, 24, 27, 0.25);
+}
+
+:root[data-theme='dark'] {
+  --bg: #171614;
+  --bg2: #1e1c19;
+  --ink: #ece7de;
+  --body: #b3aca0;
+  --mute: #877f73;
+  --line: #2b2823;
+  --hair: #3d3931;
+  --nav: rgba(23, 22, 20, 0.9);
+  --card: #1e1c19;
+  --shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #171614;
+    --bg2: #1e1c19;
+    --ink: #ece7de;
+    --body: #b3aca0;
+    --mute: #877f73;
+    --line: #2b2823;
+    --hair: #3d3931;
+    --nav: rgba(23, 22, 20, 0.9);
+    --card: #1e1c19;
+    --shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.65);
+  }
+}
+
+html,
 body {
-  background-color: #020617; /* Slate 950 base */
-  color: #f8fafc;
+  margin: 0;
+  background: var(--bg);
+  color: var(--body);
+  font-family: 'Poppins', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+a {
+  color: var(--ink);
+  text-decoration: none;
 }
 
-::-webkit-scrollbar-track {
-  background: #00041F; 
+::selection {
+  background: var(--ink);
+  color: var(--bg);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #1e293b; 
-  border-radius: 4px;
+input::placeholder,
+textarea::placeholder {
+  color: var(--mute);
+  opacity: 1;
+  font-family: 'Newsreader', serif;
+  font-style: italic;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #0075FF; 
+textarea {
+  field-sizing: content;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+img {
+  display: block;
+}
+
+@keyframes wm3dot {
+  0%,
+  20% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 1;
+  }
+  80%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+/* ---------- Hover states ----------
+   The design expresses these as style-hover attributes; in the app
+   they become classes so the styles stay out of the JSX. */
+
+.h-ink:hover {
+  color: var(--ink);
+}
+.h-mute:hover {
+  color: var(--mute);
+}
+.h-row:hover {
+  background: var(--bg2);
+}
+.h-underline:hover {
+  border-color: var(--ink);
+}
+.h-pill:hover {
+  background: var(--ink);
+  color: var(--bg);
+}
+.h-theme:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.h-chip:hover {
+  color: var(--ink);
+  border-color: var(--hair);
+}
+.h-source:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.h-starter:hover {
+  color: var(--ink);
+  padding-left: 6px;
+}
+.h-btn-solid:hover {
+  background: var(--body);
+  color: var(--bg);
+}
+.h-btn-outline:hover {
+  border-color: var(--ink);
+}
+.h-clear:hover {
+  color: var(--ink);
+  border-color: var(--hair);
+}
+.h-stop:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.h-footname:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 820px) {
+  [style*='grid-template-columns'] {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+  [data-m='msg'] {
+    grid-template-columns: 34px 1fr !important;
+    gap: 14px !important;
+  }
+  [data-m='sticky-side'] {
+    position: static !important;
+    top: auto !important;
+  }
+  nav > div,
+  main > section,
+  footer > div,
+  main[style*='max-width'] {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+  main > section {
+    padding-top: 64px !important;
+  }
+  main > section:last-child {
+    padding-bottom: 72px !important;
+  }
+  nav > div {
+    height: auto !important;
+    min-height: 64px;
+    flex-wrap: wrap;
+    gap: 12px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+  nav > div > div {
+    gap: 14px !important;
+    font-size: 13px !important;
+    flex-wrap: wrap;
+  }
+  h1 {
+    font-size: clamp(40px, 11.5vw, 58px) !important;
+    line-height: 1 !important;
+  }
+  h2 {
+    font-size: 28px !important;
+  }
+  h3 {
+    font-size: 20px !important;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  [data-m='row'] > span:last-child {
+    justify-self: start !important;
+  }
+  [data-m='btn'] {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  [data-m='tilt'] {
+    transform: none !important;
+  }
 }
