@@ -66,7 +66,20 @@ export async function POST(req: Request): Promise<Response> {
       system: SYSTEM_PROMPT,
       prompt: `Passages:\n\n${context}\n\nQuestion: ${question}`,
       maxOutputTokens: 600,
-      providerOptions: { gateway: { tags: ['feature:ask-wm3', 'site:wm3.ai'] } },
+      providerOptions: {
+        gateway: {
+          // The free tier cannot use Vertex, which is where this slug resolves
+          // by default. Google's own endpoint serves the same model and is
+          // available, so pin the provider rather than the model.
+          only: ['google'],
+          tags: ['feature:ask-wm3', 'site:wm3.ai'],
+        },
+      },
+      onError({ error }) {
+        // streamText reports failures through the stream, so without this a
+        // provider rejection is a silent 200 with an empty body.
+        console.error('[WM3] generation error', error);
+      },
     });
 
     return result.toTextStreamResponse({
