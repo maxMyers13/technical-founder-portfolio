@@ -1,7 +1,5 @@
 import { streamText } from 'ai';
 
-export const config = { runtime: 'nodejs' };
-
 /**
  * The cloud lane for Ask WM3.
  *
@@ -36,11 +34,12 @@ interface Passage {
   text: string;
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
-
+/**
+ * Named method export, not a default one: with a default export Vercel's Node
+ * runtime uses the `(req, res)` signature and ignores anything returned, so a
+ * handler that returns a Response hangs until the function times out.
+ */
+export async function POST(req: Request): Promise<Response> {
   let question: string;
   let passages: Passage[];
   try {
