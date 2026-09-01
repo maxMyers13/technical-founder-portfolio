@@ -40,8 +40,14 @@ export interface Source {
   route?: Route;
 }
 
-/** `nano` wrote the answer on-device; `quoted` read it straight out of the archive. */
-export type AnswerLane = 'nano' | 'quoted';
+/**
+ * Who wrote an answer: a hosted model, Chrome's on-device model, or nobody —
+ * `quoted` is the archive's own words, read straight out of the index.
+ */
+export type AnswerLane = 'cloud' | 'nano' | 'quoted';
+
+/** Which lane to try first. `auto` walks cloud -> nano -> quoted. */
+export type LanePreference = 'auto' | AnswerLane;
 
 export interface UserMessage {
   role: 'user';

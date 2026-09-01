@@ -1,7 +1,7 @@
 import React from 'react';
 import { STARTER_QUESTIONS } from '../../constants';
 import { NanoStatus } from '../../lib/wm3/nano';
-import { AnswerLane, AssistantMessage, Message, Route, Source } from '../../types';
+import { AnswerLane, AssistantMessage, LanePreference, Message, Route, Source } from '../../types';
 import { serif } from '../ui/styles';
 
 const eyebrow: React.CSSProperties = {
@@ -14,9 +14,30 @@ const eyebrow: React.CSSProperties = {
 
 /** Says which lane wrote a given answer, so the receipts cover the model too. */
 const LANE_NOTE: Record<AnswerLane, string> = {
+  cloud: 'written by a hosted model, from the sources below',
   nano: 'written on your device by Gemini Nano, from the sources below',
   quoted: 'quoted straight from the archive — no model wrote this',
 };
+
+/** The lane switcher. Ask the same thing twice and watch them differ. */
+const LANE_OPTIONS: { key: LanePreference; label: string }[] = [
+  { key: 'auto', label: 'Auto' },
+  { key: 'cloud', label: 'Cloud' },
+  { key: 'nano', label: 'On-device' },
+  { key: 'quoted', label: 'Quotes' },
+];
+
+const lanePill = (active: boolean): React.CSSProperties => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  height: 26,
+  padding: '0 11px',
+  borderRadius: 9999,
+  fontSize: 11.5,
+  ...(active
+    ? { background: 'var(--ink)', color: 'var(--bg)', fontWeight: 600 }
+    : { border: '1px solid var(--hair)', color: 'var(--body)', fontWeight: 500 }),
+});
 
 /** One line about which lane is answering, and how far off the other one is. */
 function laneNote(nano: NanoStatus): string | null {
@@ -36,6 +57,8 @@ interface Props {
   messages: Message[];
   streaming: boolean;
   nano: NanoStatus;
+  preference: LanePreference;
+  onPreferenceChange: (p: LanePreference) => void;
   composer: string;
   expanded: Record<string, boolean>;
   onToggleSource: (key: string) => void;
@@ -244,6 +267,8 @@ const Ask: React.FC<Props> = ({
   messages,
   streaming,
   nano,
+  preference,
+  onPreferenceChange,
   composer,
   expanded,
   onToggleSource,
@@ -304,6 +329,31 @@ const Ask: React.FC<Props> = ({
     >
       Ask WM3
     </h1>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 20,
+        flexWrap: 'wrap',
+      }}
+    >
+      <span style={{ ...eyebrow, marginRight: 2 }}>lane</span>
+      {LANE_OPTIONS.map((option) => (
+        <a
+          key={option.key}
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            onPreferenceChange(option.key);
+          }}
+          style={lanePill(option.key === preference)}
+        >
+          {option.label}
+        </a>
+      ))}
+    </div>
+
     <p
       style={{
         fontSize: 15.5,

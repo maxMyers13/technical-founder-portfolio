@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
+    "ai": "^6.0.273",
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

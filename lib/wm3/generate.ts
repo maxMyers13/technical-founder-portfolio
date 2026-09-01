@@ -1,14 +1,18 @@
-import { AnswerLane } from '../../types';
+import { AnswerLane, LanePreference } from '../../types';
 import { Match } from './archive';
+import { streamCloud } from './cloud';
 import { createSession, nanoIsReady } from './nano';
 
 /**
- * Turning retrieved passages into an answer.
+ * Turning retrieved passages into an answer, down one of three lanes.
  *
- * Gemini Nano is the default lane — when Chrome can run it, the passages are
- * written up on the reader's own machine. Quoting is what happens when it
- * can't: on every phone, every Safari, and every desktop while the model is
- * still downloading. Quoting cannot hallucinate, so it is a fine place to land.
+ *   cloud   a hosted model via /api/ask
+ *   nano    Chrome's on-device Gemini Nano
+ *   quoted  no model at all — the passages, verbatim, attributed
+ *
+ * `auto` walks them in that order and takes the first that produces text.
+ * Naming a lane forces it and does not fall through, so the playground can
+ * compare them on the same question.
  */
 
 const SYSTEM_PROMPT = `You are WM3, the archive interface on Max Myers' site wm3.ai.
@@ -61,46 +65,86 @@ export function quoteAnswer(matches: Match[]): string {
   return `${lead}\n\n${passages}`;
 }
 
+/** Nano's stream, normalized. Yields nothing if it never produces text. */
+async function* nanoStream(
+  question: string,
+  matches: Match[],
+  signal?: AbortSignal,
+): AsyncGenerator<string> {
+  const session = await createSession(SYSTEM_PROMPT);
+  if (!session) return;
+
+  try {
+    const stream = session.promptStreaming(
+      `Passages:\n\n${buildContext(matches)}\n\nQuestion: ${question}`,
+    );
+    // Chrome has shipped both delta chunks and cumulative snapshots here.
+    let emitted = '';
+    for await (const piece of stream as AsyncIterable<string>) {
+      if (signal?.aborted) break;
+      const delta = piece.startsWith(emitted) ? piece.slice(emitted.length) : piece;
+      emitted += delta;
+      yield delta;
+    }
+  } finally {
+    session.destroy?.();
+  }
+}
+
 /**
  * Streams an answer as text deltas.
  *
- * `onLane` fires as soon as the lane is settled — which is only once the first
- * token actually arrives, not when Nano is merely reported ready. A session
- * that opens and then dies still ends up quoting, and the reader should be
- * told what wrote the words they are looking at, not what was attempted.
+ * `onLane` fires on the first token that actually arrives, so the label
+ * describes the words on screen rather than which lane was attempted. A lane
+ * that dies part-way keeps whatever it wrote — appending a second lane's
+ * output would read as one answer in two voices.
  */
 export async function* streamAnswer(
   question: string,
   matches: Match[],
   signal?: AbortSignal,
   onLane?: (lane: AnswerLane) => void,
+  preference: LanePreference = 'auto',
 ): AsyncGenerator<string> {
-  if (nanoIsReady()) {
-    const session = await createSession(SYSTEM_PROMPT);
-    if (session) {
-      // Tracked outside the try: if Nano dies part-way we must not append
-      // quotes to what it already wrote, which would read as one answer in
-      // two voices. Whatever landed stands on its own.
-      let emitted = '';
-      try {
-        const input = `Passages:\n\n${buildContext(matches)}\n\nQuestion: ${question}`;
-        const stream = session.promptStreaming(input);
+  const auto = preference === 'auto';
 
-        // Chrome has shipped both delta chunks and cumulative snapshots here.
-        for await (const piece of stream as AsyncIterable<string>) {
-          if (signal?.aborted) break;
-          const delta = piece.startsWith(emitted) ? piece.slice(emitted.length) : piece;
-          if (!emitted && delta.trim()) onLane?.('nano');
-          emitted += delta;
-          yield delta;
+  if (preference === 'cloud' || auto) {
+    let emitted = false;
+    try {
+      for await (const delta of streamCloud(question, matches, signal)) {
+        if (signal?.aborted) break;
+        if (!emitted && delta.trim()) {
+          emitted = true;
+          onLane?.('cloud');
         }
-      } catch (err) {
-        console.warn('[WM3] Gemini Nano generation failed', err);
-      } finally {
-        session.destroy?.();
+        yield delta;
       }
-      if (emitted.trim()) return;
+    } catch (err) {
+      console.warn('[WM3] cloud lane failed', err);
     }
+    if (emitted) return;
+    if (preference === 'cloud') {
+      onLane?.('quoted');
+      yield quoteAnswer(matches);
+      return;
+    }
+  }
+
+  if ((preference === 'nano' || auto) && nanoIsReady()) {
+    let emitted = false;
+    try {
+      for await (const delta of nanoStream(question, matches, signal)) {
+        if (signal?.aborted) break;
+        if (!emitted && delta.trim()) {
+          emitted = true;
+          onLane?.('nano');
+        }
+        yield delta;
+      }
+    } catch (err) {
+      console.warn('[WM3] Gemini Nano generation failed', err);
+    }
+    if (emitted) return;
   }
 
   onLane?.('quoted');

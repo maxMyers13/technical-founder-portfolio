@@ -2,13 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Match, SCORE_FLOOR, prewarm, search, toSources } from '../lib/wm3/archive';
 import { streamAnswer } from '../lib/wm3/generate';
 import { NanoStatus, ensureNano, getNanoStatus, onNanoStatus, probeNano } from '../lib/wm3/nano';
-import { AssistantMessage, Message } from '../types';
+import { AssistantMessage, LanePreference, Message } from '../types';
 
 /** Ceiling on how fast text is revealed, so answers read rather than blink into place. */
 const CHARS_PER_SECOND = 110;
 const FRAME_MS = 16;
 /** How long to wait before admitting the model is downloading, not thinking. */
 const SLOW_NOTICE_MS = 1800;
+
+const LANE_KEY = 'wm3-lane';
 
 const NOT_IN_ARCHIVE =
   'That isn’t in the archive — and WM3 doesn’t guess. It only answers from what Max has actually published: the posts, the builds, the talks, and this site.\n\nTry asking what he’s building, why he left Microsoft, or how he tailors a resume. Or email the human: max@learnwleo.com.';
@@ -24,6 +26,19 @@ export function useWm3Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [nano, setNano] = useState<NanoStatus>(getNanoStatus);
+  // Which lane to try first. Sticky so a comparison survives a reload.
+  const [preference, setPreferenceState] = useState<LanePreference>(() => {
+    try {
+      const stored = localStorage.getItem(LANE_KEY);
+      if (stored === 'auto' || stored === 'cloud' || stored === 'nano' || stored === 'quoted') {
+        return stored;
+      }
+    } catch {
+      // A locked-down localStorage just means "auto".
+    }
+    return 'auto';
+  });
+  const preferenceRef = useRef<LanePreference>(preference);
   const ticker = useRef<number | null>(null);
   const abort = useRef<AbortController | null>(null);
   const lastQuestion = useRef('');
@@ -124,8 +139,12 @@ export function useWm3Chat() {
         });
         startTicker();
 
-        const stream = streamAnswer(question, relevant, controller.signal, (lane) =>
-          patchLast({ lane }),
+        const stream = streamAnswer(
+          question,
+          relevant,
+          controller.signal,
+          (lane) => patchLast({ lane }),
+          preferenceRef.current,
         );
         for await (const delta of stream) {
           if (controller.signal.aborted) break;
@@ -224,5 +243,15 @@ export function useWm3Chat() {
     void ensureNano();
   }, []);
 
-  return { messages, streaming, nano, ask, retry, stop, clear, warmNano };
+  const setPreference = useCallback((next: LanePreference) => {
+    preferenceRef.current = next;
+    setPreferenceState(next);
+    try {
+      localStorage.setItem(LANE_KEY, next);
+    } catch {
+      // Still applies for this session.
+    }
+  }, []);
+
+  return { messages, streaming, nano, preference, setPreference, ask, retry, stop, clear, warmNano };
 }

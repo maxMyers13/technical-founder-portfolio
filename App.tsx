@@ -106,6 +106,8 @@ const App: React.FC = () => {
           messages={chat.messages}
           streaming={chat.streaming}
           nano={chat.nano}
+          preference={chat.preference}
+          onPreferenceChange={chat.setPreference}
           composer={composer}
           expanded={expanded}
           onToggleSource={toggleSource}
