@@ -47,14 +47,14 @@ const PHOTOS = [
   },
   {
     src: '/assets/photos/the-team.jpg',
-    placeholder: 'Max and three others in suits',
-    caption: 'the team · October 2025',
+    placeholder: 'Max and three others in suits at AfroTech',
+    caption: 'AfroTech ’25 · October 2025',
     tilt: -0.6,
   },
   {
     src: '/assets/photos/on-stage-room.jpg',
-    placeholder: 'Max presenting to a full room',
-    caption: 'a full room · December 2025',
+    placeholder: 'Max on stage at Techsgiving Summit 2025, presenting to a full room',
+    caption: 'on stage at Techsgiving Summit ’25',
     tilt: 0.8,
   },
   {
