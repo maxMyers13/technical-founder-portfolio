@@ -40,34 +40,52 @@ const PHOTOS = [
     tilt: -1,
   },
   {
-    src: '/assets/photos/microsoft-campus.jpg',
-    placeholder: 'Max at the Microsoft campus sign',
-    caption: 'Redmond · July 2026, days before he left',
-    tilt: 1.2,
-  },
-  {
     src: '/assets/photos/microsoft-badge.jpg',
-    placeholder: 'a Microsoft intern badge held up to the camera',
+    placeholder: 'A Microsoft intern badge held up to the camera',
     caption: 'the intern badge · 2023',
-    tilt: -0.6,
-  },
-  {
-    src: '/assets/photos/yc-startup-school.jpg',
-    placeholder: 'Max in front of the Y Combinator wall',
-    caption: 'YC Startup School · July 2026',
-    tilt: 0.8,
-  },
-  {
-    src: '/assets/photos/on-stage-room.jpg',
-    placeholder: 'Max presenting to a full room',
-    caption: 'a full room · December 2025',
-    tilt: -1.1,
+    tilt: 1.2,
   },
   {
     src: '/assets/photos/the-team.jpg',
     placeholder: 'Max and three others in suits',
     caption: 'the team · October 2025',
+    tilt: -0.6,
+  },
+  {
+    src: '/assets/photos/on-stage-room.jpg',
+    placeholder: 'Max presenting to a full room',
+    caption: 'a full room · December 2025',
+    tilt: 0.8,
+  },
+  {
+    src: '/assets/photos/towson-week-one.jpg',
+    placeholder: 'Max and Brian at the StarTUp at the Armory sign in Towson tees',
+    caption: 'week one at the Armory · June 2026',
+    tilt: -1.1,
+  },
+  {
+    src: '/assets/photos/the-announcement.jpg',
+    placeholder: 'A Times Square billboard reading TRADE: Microsoft to LinkedInOrLeftOut',
+    caption: 'the trade announcement · July 2026',
     tilt: 0.5,
+  },
+  {
+    src: '/assets/photos/microsoft-campus.jpg',
+    placeholder: 'Max at the Microsoft campus sign',
+    caption: 'Redmond · days before he left',
+    tilt: -0.7,
+  },
+  {
+    src: '/assets/photos/towson-last-day.jpg',
+    placeholder: 'Max and Brian in suits at the StarTUp at the Armory sign',
+    caption: 'the last day of the accelerator · July 2026',
+    tilt: 1,
+  },
+  {
+    src: '/assets/photos/yc-startup-school.jpg',
+    placeholder: 'Max in front of the Y Combinator wall',
+    caption: 'YC Startup School · July 2026',
+    tilt: -0.4,
   },
 ];
 

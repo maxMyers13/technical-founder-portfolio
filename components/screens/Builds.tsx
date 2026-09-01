@@ -5,9 +5,24 @@ import PhotoFrame from '../ui/PhotoFrame';
 import { pageIntro, pageTitle, serif } from '../ui/styles';
 
 const REMNANTS = [
-  { placeholder: 'a screenshot of the LILO editor', caption: 'the LILO editor · pending', tilt: -0.8 },
-  { placeholder: 'a photo of a whiteboard', caption: 'a whiteboard · pending', tilt: 1 },
-  { placeholder: 'a dead end worth keeping', caption: 'a dead end worth keeping · pending', tilt: -0.4 },
+  {
+    src: '/assets/photos/lilo-editor.jpg',
+    placeholder: 'The LILO editor: problem prompt on the left, code and test cases on the right',
+    caption: 'the editor, mid-problem',
+    tilt: -0.8,
+  },
+  {
+    src: '/assets/photos/whiteboard.jpg',
+    placeholder: 'A hand-drawn diagram of how the hackathon project fits together',
+    caption: 'working out how the hackathon fit together',
+    tilt: 1,
+  },
+  {
+    src: '/assets/photos/design-player-bug.jpg',
+    placeholder: 'The system design player showing a layout bug',
+    caption: 'a bug in the design player, caught mid-build',
+    tilt: -0.4,
+  },
 ];
 
 const filterStyle = (active: boolean): React.CSSProperties => ({
@@ -197,7 +212,7 @@ const Builds: React.FC<Props> = ({ onNavigate, filter, onFilterChange }) => {
         <span style={serif(16)}>remnants</span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--body)', maxWidth: 560 }}>
-            Screenshots, whiteboards and dead ends that don’t deserve a row but did happen. Real ones
+            Screenshots, whiteboards and dead ends that don’t deserve a row but did happen. More
             get dropped in as I dig them up.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
