@@ -1,7 +1,16 @@
 import React from 'react';
 import { LILO_URL } from '../../constants';
 import { Route } from '../../types';
+import DemoClip from '../ui/DemoClip';
 import { outlineButton, serif, solidButton } from '../ui/styles';
+
+/** Two clips side by side, stacking on the mobile pass in index.css. */
+const clipGrid: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 16,
+  marginTop: 8,
+};
 
 const block = (topBorder: string, marginTop: number): React.CSSProperties => ({
   display: 'grid',
@@ -57,18 +66,13 @@ const Lilo: React.FC<Props> = ({ onNavigate }) => (
       citizen. LILO deletes the bill.
     </p>
 
-    <div
-      style={{
-        marginTop: 52,
-        border: '1px solid var(--line)',
-        borderRadius: 12,
-        overflow: 'hidden',
-        background: 'var(--bg2)',
-      }}
-    >
-      <img src="/assets/metrics.png" alt="LILO metrics" style={{ width: '100%', height: 'auto' }} />
+    <div style={{ marginTop: 52 }}>
+      <DemoClip
+        src="/assets/demos/browser-preview.mp4"
+        label="A student edits files on the left while their web app builds and runs on the right, with no server in the loop."
+        caption="the student’s app compiling and running in the tab — esbuild in the browser, their own /api handler answering the request"
+      />
     </div>
-    <span style={{ display: 'block', ...serif(13), marginTop: 10 }}>live metrics, August 2026</span>
 
     <div style={block('1px solid var(--ink)', 76)}>
       <span style={serif(16)}>the runtime</span>
@@ -83,6 +87,18 @@ const Lilo: React.FC<Props> = ({ onNavigate }) => (
           from about 15 seconds to under 150ms on low-spec hardware. TypeScript and Tailwind on top,
           Postgres and Kubernetes underneath.
         </p>
+        <div style={clipGrid}>
+          <DemoClip
+            src="/assets/demos/python-debugger.mp4"
+            label="Stepping through Python line by line inside the editor, watching variables update."
+            caption="the Python step debugger, running in the tab"
+          />
+          <DemoClip
+            src="/assets/demos/offline-downloads.mp4"
+            label="A downloaded module opening in airplane mode — lessons, readings and figures all load."
+            caption="airplane mode — a downloaded module still works"
+          />
+        </div>
       </div>
     </div>
 
@@ -97,12 +113,26 @@ const Lilo: React.FC<Props> = ({ onNavigate }) => (
 
     <div style={block('1px solid var(--line)', 48)}>
       <span style={serif(16)}>why me</span>
-      <p style={{ fontSize: 18, lineHeight: 1.7, color: 'var(--ink)' }}>
-        LinkedInOrLeftOut started in July 2022 as mock interviews and resume rewrites. Since then:
-        3,000+ students equipped for SWE roles, interviews at 100+ companies — every FAANG among them
-        — and ten-plus workshops with NSBE, ColorStack, UMD and USF. Teaching first, platform second;
-        the product knows where people get stuck because we watched it happen.
-      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <p style={{ fontSize: 18, lineHeight: 1.7, color: 'var(--ink)' }}>
+          LinkedInOrLeftOut started in July 2022 as mock interviews and resume rewrites. Since then:
+          3,000+ students equipped for SWE roles, interviews at 100+ companies — every FAANG among
+          them — and ten-plus workshops with NSBE, ColorStack, UMD and USF. Teaching first, platform
+          second; the product knows where people get stuck because we watched it happen.
+        </p>
+        <div style={clipGrid}>
+          <DemoClip
+            src="/assets/demos/predict-before-run.mp4"
+            label="An exercise that locks the Run button until the student has written down what they think the code will do, then shows predicted against actual."
+            caption="Run stays locked until you commit to a prediction"
+          />
+          <DemoClip
+            src="/assets/demos/mock-interview-rooms.mp4"
+            label="Two people editing the same file live in a mock interview room, with the interviewer's private notes rail alongside."
+            caption="the mock interviews, now a room in the product"
+          />
+        </div>
+      </div>
     </div>
 
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 64 }}>
