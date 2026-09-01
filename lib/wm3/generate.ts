@@ -1,13 +1,13 @@
 import { Match } from './archive';
+import { createSession, nanoIsReady } from './nano';
 
 /**
  * Turning retrieved passages into an answer.
  *
- * Two lanes. If Chrome's Prompt API already has Gemini Nano on this machine,
- * the passages are written up on-device. Otherwise the passages are quoted
- * directly. The quoting lane is the default, not a degraded mode — it is the
- * one that runs for every phone, every Safari, and every desktop that hasn't
- * got the model.
+ * Gemini Nano is the default lane — when Chrome can run it, the passages are
+ * written up on the reader's own machine. Quoting is what happens when it
+ * can't: on every phone, every Safari, and every desktop while the model is
+ * still downloading. Quoting cannot hallucinate, so it is a fine place to land.
  */
 
 const SYSTEM_PROMPT = `You are WM3, the archive interface on Max Myers' site wm3.ai.
@@ -20,45 +20,17 @@ Rules:
 - Two short paragraphs at most. No preamble, no "based on the passages".
 - Do not invent numbers, dates, employers or names that are not in the passages.`;
 
-type PromptApi = {
-  availability(): Promise<string>;
-  create(options?: unknown): Promise<{
-    promptStreaming(input: string): AsyncIterable<string> | ReadableStream<string>;
-    destroy?(): void;
-  }>;
-};
-
-/** Chrome exposes this as `LanguageModel`; older origin-trial builds used `window.ai.languageModel`. */
-function getPromptApi(): PromptApi | null {
-  if (typeof window === 'undefined') return null;
-  const w = window as unknown as { LanguageModel?: PromptApi; ai?: { languageModel?: PromptApi } };
-  return w.LanguageModel ?? w.ai?.languageModel ?? null;
-}
-
-/**
- * Only "available" counts. On a portfolio a visitor is a reader, not a user who
- * opted into a tool — we never trigger the multi-gigabyte model download, and
- * "downloadable" is treated exactly like "no".
- */
-export async function nanoReady(): Promise<boolean> {
-  const api = getPromptApi();
-  if (!api) return false;
-  try {
-    const state = await api.availability();
-    return state === 'available' || state === 'readily';
-  } catch {
-    return false;
-  }
-}
+/** Longest quote to show before trimming — roughly a readable paragraph. */
+const QUOTE_CHARS = 420;
 
 function buildContext(matches: Match[]): string {
   return matches
-    .map((m, i) => `[${i + 1}] ${m.chunk.title}${m.chunk.date ? ` (${m.chunk.date})` : ''}\n${m.chunk.text}`)
+    .map(
+      (m, i) =>
+        `[${i + 1}] ${m.chunk.title}${m.chunk.date ? ` (${m.chunk.date})` : ''}\n${m.chunk.text}`,
+    )
     .join('\n\n');
 }
-
-/** Longest quote to show before trimming — roughly a readable paragraph. */
-const QUOTE_CHARS = 420;
 
 /** Trim to the last sentence that fits, so a quote never ends mid-clause. */
 function trimToSentence(text: string): string {
@@ -89,40 +61,35 @@ export function quoteAnswer(matches: Match[]): string {
 }
 
 /**
- * Streams an answer as text deltas. Falls back to the quoting lane if the
- * Prompt API is absent or throws part-way through.
+ * Streams an answer as text deltas. Uses Nano when it is ready and falls back
+ * to quoting if it is not, or if it fails part-way.
  */
 export async function* streamAnswer(
   question: string,
   matches: Match[],
   signal?: AbortSignal,
 ): AsyncGenerator<string> {
-  const api = getPromptApi();
+  if (nanoIsReady()) {
+    const session = await createSession(SYSTEM_PROMPT);
+    if (session) {
+      try {
+        const input = `Passages:\n\n${buildContext(matches)}\n\nQuestion: ${question}`;
+        const stream = session.promptStreaming(input);
 
-  if (api && (await nanoReady())) {
-    try {
-      const session = await api.create({
-        initialPrompts: [{ role: 'system', content: SYSTEM_PROMPT }],
-        // Chrome warns and degrades output quality without this.
-        expectedInputs: [{ type: 'text', languages: ['en'] }],
-        expectedOutputs: [{ type: 'text', languages: ['en'] }],
-      });
-      const input = `Passages:\n\n${buildContext(matches)}\n\nQuestion: ${question}`;
-      const stream = session.promptStreaming(input);
-
-      // Chrome has shipped both delta chunks and cumulative snapshots here.
-      let emitted = '';
-      for await (const piece of stream as AsyncIterable<string>) {
-        if (signal?.aborted) break;
-        const delta = piece.startsWith(emitted) ? piece.slice(emitted.length) : piece;
-        emitted += delta;
-        yield delta;
+        // Chrome has shipped both delta chunks and cumulative snapshots here.
+        let emitted = '';
+        for await (const piece of stream as AsyncIterable<string>) {
+          if (signal?.aborted) break;
+          const delta = piece.startsWith(emitted) ? piece.slice(emitted.length) : piece;
+          emitted += delta;
+          yield delta;
+        }
+        session.destroy?.();
+        if (emitted.trim()) return;
+      } catch (err) {
+        // A half-written on-device answer is worse than a clean set of quotes.
+        console.warn('[WM3] Gemini Nano generation failed, quoting instead', err);
       }
-      session.destroy?.();
-      if (emitted.trim()) return;
-    } catch {
-      // Fall through to quoting — a half-written on-device answer is worse
-      // than a clean set of quotes.
     }
   }
 

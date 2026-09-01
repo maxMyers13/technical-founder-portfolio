@@ -1,5 +1,6 @@
 import React from 'react';
 import { STARTER_QUESTIONS } from '../../constants';
+import { NanoStatus } from '../../lib/wm3/nano';
 import { AssistantMessage, Message, Route, Source } from '../../types';
 import { serif } from '../ui/styles';
 
@@ -11,9 +12,24 @@ const eyebrow: React.CSSProperties = {
   color: 'var(--mute)',
 };
 
+/** One line about which lane is answering, and how far off the other one is. */
+function laneNote(nano: NanoStatus): string | null {
+  switch (nano.state) {
+    case 'ready':
+      return 'writing answers with Chrome’s on-device model — nothing leaves this page';
+    case 'downloading':
+      return `fetching Chrome’s on-device model — ${nano.percent}% · quoting the archive until it lands`;
+    case 'downloadable':
+      return 'ask something and Chrome’s on-device model starts downloading in the background';
+    default:
+      return null;
+  }
+}
+
 interface Props {
   messages: Message[];
   streaming: boolean;
+  nano: NanoStatus;
   composer: string;
   expanded: Record<string, boolean>;
   onToggleSource: (key: string) => void;
@@ -217,6 +233,7 @@ const AssistantBubble: React.FC<{
 const Ask: React.FC<Props> = ({
   messages,
   streaming,
+  nano,
   composer,
   expanded,
   onToggleSource,
@@ -427,7 +444,7 @@ const Ask: React.FC<Props> = ({
         }}
       >
         <span style={{ fontSize: 11, color: 'var(--mute)' }}>
-          Enter sends · Shift+Enter for a new line
+          {laneNote(nano) ?? 'Enter sends · Shift+Enter for a new line'}
         </span>
         {streaming && (
           <a

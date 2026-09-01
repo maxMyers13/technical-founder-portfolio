@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Match, SCORE_FLOOR, prewarm, search, toSources } from '../lib/wm3/archive';
 import { streamAnswer } from '../lib/wm3/generate';
+import { NanoStatus, ensureNano, getNanoStatus, onNanoStatus, probeNano } from '../lib/wm3/nano';
 import { AssistantMessage, Message } from '../types';
 
 /** Ceiling on how fast text is revealed, so answers read rather than blink into place. */
@@ -22,6 +23,7 @@ const NOT_IN_ARCHIVE =
 export function useWm3Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState(false);
+  const [nano, setNano] = useState<NanoStatus>(getNanoStatus);
   const ticker = useRef<number | null>(null);
   const abort = useRef<AbortController | null>(null);
   const lastQuestion = useRef('');
@@ -43,7 +45,10 @@ export function useWm3Chat() {
     // The index is small and the model is the slow part — start both while the
     // reader is still deciding what to ask.
     prewarm();
+    void probeNano();
+    const unsubscribe = onNanoStatus(setNano);
     return () => {
+      unsubscribe();
       clearTicker();
       abort.current?.abort();
     };
@@ -144,6 +149,12 @@ export function useWm3Chat() {
       if (!question || streaming) return;
       lastQuestion.current = question;
 
+      // Chrome only starts the model download under user activation, and an
+      // await would spend it — so this fires in the same tick as the click.
+      // It is deliberately not awaited: this answer comes from the archive
+      // now, and Nano writes the next one once it has landed.
+      void ensureNano();
+
       setMessages((prev) => [
         ...prev,
         { role: 'user', text: question },
@@ -200,5 +211,14 @@ export function useWm3Chat() {
     setStreaming(false);
   }, [clearTicker]);
 
-  return { messages, streaming, ask, retry, stop, clear };
+  /**
+   * Start the Nano download from a click that will reach `ask` a tick later
+   * (the home-page chips route through the Ask screen first). Chrome's user
+   * activation has to be spent in the click's own turn, not after a timeout.
+   */
+  const warmNano = useCallback(() => {
+    void ensureNano();
+  }, []);
+
+  return { messages, streaming, nano, ask, retry, stop, clear, warmNano };
 }

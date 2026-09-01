@@ -61,6 +61,7 @@ const App: React.FC = () => {
   const askFromAnywhere = useCallback(
     (question: string) => {
       if (!question.trim()) return;
+      chat.warmNano();
       setRoute('ask');
       setAskTeaser('');
       window.scrollTo(0, 0);
@@ -104,6 +105,7 @@ const App: React.FC = () => {
         <Ask
           messages={chat.messages}
           streaming={chat.streaming}
+          nano={chat.nano}
           composer={composer}
           expanded={expanded}
           onToggleSource={toggleSource}

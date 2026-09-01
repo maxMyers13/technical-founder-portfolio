@@ -15,6 +15,6 @@ Chromium media pipeline (2024–2026): building, measuring and landing media fea
 
 Media Telemetry Copilot (hackathon): a VS Code extension that streams a Copilot diagnosis of PlayReady media failures — the first slice wired a readiness analyzer to the VS Code Language Model API on sample telemetry.
 
-WM3 (2026): the retrieval backend for Ask WM3 — embeddings over a deny-by-default allowlist of the public post archive, with streamed answers and citations. The site you are on is the front half.
+WM3 (2026): the Ask WM3 archive interface, running entirely in the reader's tab. MiniLM embeds the question on their own machine, cosine search runs over an index built from a deny-by-default allowlist of the public post archive, and Chrome's on-device Gemini Nano writes the answer when the browser can run it — otherwise the passages are quoted straight from the archive with citations. No server, no API key, and no question ever leaves the page.
 
 What Max is working on now: LILO's on-device tutor, with the current fight being WebNN inference on a $60 Chromebook without melting it; and WM3's retrieval over the public post archive, so answers come with receipts.
