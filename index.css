@@ -227,3 +227,16 @@ img {
     transform: none !important;
   }
 }
+
+/* The Life photo wall narrows before the rest of the mobile pass kicks in. */
+@media (max-width: 900px) {
+  [data-m='wall'] {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 560px) {
+  [data-m='wall'] {
+    column-count: 1;
+  }
+}

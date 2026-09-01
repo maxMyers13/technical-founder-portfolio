@@ -182,16 +182,16 @@ const Life: React.FC<Props> = ({ onNavigate }) => (
           </div>
         ))}
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 16,
-            marginTop: 44,
-          }}
-        >
+        {/*
+          A column wall rather than a grid: every frame keeps its own photo's
+          proportions, so portraits and landscapes sit together without either
+          being cropped or letterboxed into a shared box.
+        */}
+        <div data-m="wall" style={{ columnCount: 3, columnGap: 16, marginTop: 44 }}>
           {PHOTOS.map((p) => (
-            <PhotoFrame key={p.caption} {...p} height={180} />
+            <div key={p.caption} style={{ breakInside: 'avoid', marginBottom: 16 }}>
+              <PhotoFrame {...p} height={180} />
+            </div>
           ))}
         </div>
 

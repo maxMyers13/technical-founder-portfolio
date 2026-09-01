@@ -91,8 +91,11 @@ const BuildRow: React.FC<{ build: Build; onNavigate: (route: Route) => void }> =
                   width: '100%',
                   aspectRatio: '16 / 10',
                   backgroundImage: `url("${build.img}")`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'top center',
+                  // Screenshots lose their point when cropped — fit the whole
+                  // frame rather than filling it.
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center',
                 }}
               />
             </div>

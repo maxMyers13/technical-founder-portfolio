@@ -13,10 +13,15 @@ interface Props {
 }
 
 /**
- * A tilted photo frame. Real photos are cropped to the frame rather than the
- * frame to the photo, so a row stays level whatever mix of portrait and
- * landscape goes into it. Stands in for the design's <image-slot>, which only
- * exists inside the design canvas.
+ * A tilted photo frame.
+ *
+ * The frame takes the photo's shape rather than the other way round: no crop,
+ * so nobody loses the top of their head, and no letterbox, so a portrait
+ * doesn't sit in a landscape box with bars either side. `height` applies only
+ * to the empty state, which has no photo to take a shape from.
+ *
+ * Stands in for the design's <image-slot>, which only exists inside the design
+ * canvas.
  */
 const PhotoFrame: React.FC<Props> = ({ src, placeholder, caption, tilt, height }) => (
   <div
@@ -39,8 +44,7 @@ const PhotoFrame: React.FC<Props> = ({ src, placeholder, caption, tilt, height }
         loading="lazy"
         style={{
           width: '100%',
-          height,
-          objectFit: 'cover',
+          height: 'auto',
           borderRadius: 2,
           display: 'block',
         }}

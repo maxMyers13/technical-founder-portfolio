@@ -135,7 +135,7 @@ const Speaking: React.FC<Props> = ({ onNavigate }) => (
         gap: 10,
       }}
     >
-      <span style={serif(15)}>Techsgiving Workshop · Nov 2025 · invited</span>
+      <span style={serif(15)}>Techsgiving Workshop · Dec 2025 · invited</span>
       <h3
         style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}
       >
