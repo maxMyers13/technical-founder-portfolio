@@ -40,12 +40,6 @@ export interface Source {
   route?: Route;
 }
 
-export interface Answer {
-  text: string;
-  sources: Source[];
-  notFound?: boolean;
-}
-
 export interface UserMessage {
   role: 'user';
   text: string;
@@ -53,13 +47,15 @@ export interface UserMessage {
 
 export interface AssistantMessage {
   role: 'assistant';
-  /** Text revealed so far by the stream. */
+  /** Text revealed so far by the typewriter. */
   text: string;
-  /** The complete answer the stream is working towards. */
-  full: string;
   sources: Source[];
   notFound: boolean;
+  /** Retrieving, before any text exists. */
   pending: boolean;
+  /** Shown under the pending line when the wait is the model downloading. */
+  pendingNote?: string;
+  /** The typewriter still has text to reveal. */
   streaming: boolean;
   error: boolean;
 }

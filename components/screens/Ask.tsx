@@ -115,12 +115,17 @@ const AssistantBubble: React.FC<{
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
         {message.pending && !message.error && (
-          <span style={{ ...serif(15), paddingTop: 4 }}>
-            reading the archive
-            <span style={{ animation: 'wm3dot 1.2s ease-in-out 0s infinite' }}>.</span>
-            <span style={{ animation: 'wm3dot 1.2s ease-in-out .2s infinite' }}>.</span>
-            <span style={{ animation: 'wm3dot 1.2s ease-in-out .4s infinite' }}>.</span>
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 4 }}>
+            <span style={serif(15)}>
+              reading the archive
+              <span style={{ animation: 'wm3dot 1.2s ease-in-out 0s infinite' }}>.</span>
+              <span style={{ animation: 'wm3dot 1.2s ease-in-out .2s infinite' }}>.</span>
+              <span style={{ animation: 'wm3dot 1.2s ease-in-out .4s infinite' }}>.</span>
+            </span>
+            {message.pendingNote && (
+              <span style={{ fontSize: 12, color: 'var(--mute)' }}>{message.pendingNote}</span>
+            )}
+          </div>
         )}
 
         {message.text.length > 0 && !message.error && (
@@ -308,8 +313,9 @@ const Ask: React.FC<Props> = ({
           </a>
         ))}
         <span style={{ ...serif(13.5), marginTop: 22, maxWidth: 520 }}>
-          demo mode — answers come from a hand-picked slice of the archive while the full retrieval
-          backend gets wired up. It already refuses to guess.
+          runs entirely in your browser — your question is embedded on your machine and matched
+          against 213 of Max’s posts plus the pages of this site. Nothing is sent anywhere, and when
+          the archive has no answer it says so instead of guessing.
         </span>
       </div>
     )}

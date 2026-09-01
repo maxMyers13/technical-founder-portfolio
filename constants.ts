@@ -1,4 +1,4 @@
-import { Answer, Build, Post } from './types';
+import { Build, Post } from './types';
 
 export const LILO_URL = 'https://learnwleo.com';
 export const LINKEDIN_URL = 'https://www.linkedin.com/in/maxwellmyers1/';
@@ -28,7 +28,7 @@ export const NOW_ITEMS: { label: string; text: string }[] = [
   },
   {
     label: 'wiring up',
-    text: "WM3's retrieval backend — embeddings and a deny-by-default allowlist over the public post archive, so answers come with receipts.",
+    text: "WM3 answers from 213 of my LinkedIn posts now — embedded, searched and written up in your browser, with receipts. Next: widening the allowlist.",
   },
   {
     label: 'thinking about',
@@ -70,7 +70,7 @@ export const BUILDS: Build[] = [
     year: '2026',
     tag: 'meta · new',
     title: "WM3 (this site's brain)",
-    desc: "The retrieval backend for Ask WM3: Workers AI embeddings, a vector index and D1 over a deny-by-default allowlist of the public post archive, streamed answers with citations. The site you're on is the front half.",
+    desc: "Retrieval over my public post archive, running entirely in your tab: MiniLM embeds the question on your machine, cosine search over a 371-chunk index, and Chrome's on-device model writes the answer when it's there. No server, no API key, no question ever leaves the page.",
     route: 'ask',
     cta: 'Ask it →',
   },
@@ -149,88 +149,7 @@ export const BUILD_FILTERS: { key: 'everything' | 'serious' | 'side'; label: str
 
 export const STARTER_QUESTIONS = [
   'What is Max building right now?',
-  'Why did he leave Microsoft?',
+  'How does he tailor a resume?',
   'What does WM3 actually stand for?',
   'What’s the deal with the track thing?',
 ];
-
-const NOT_IN_ARCHIVE: Answer = {
-  text: 'That isn’t in the archive — and WM3 doesn’t guess. It only answers from what Max has actually published: the builds, the talks, the posts, and this site.\n\nTry asking what he’s building, why he left Microsoft, or what WM3 stands for. Or email the human: max@learnwleo.com.',
-  sources: [],
-  notFound: true,
-};
-
-/**
- * The demo slice of the archive. Keyword-matched until the retrieval
- * backend is wired up — and it returns NOT_IN_ARCHIVE rather than guessing.
- */
-export function answerFor(question: string): Answer {
-  const q = question.toLowerCase();
-  const has = (...words: string[]) => words.some((w) => q.includes(w));
-
-  if (has('build', 'lilo', 'now', 'chromebook', 'webnn', 'working on')) {
-    return {
-      text: 'Right now, LILO. The current fight is the on-device tutor — a quantized model running through WebNN so hints work on a $60 Chromebook without an inference bill or a privacy conversation. The runtime side already ships: Python on Pyodide, Java on CheerpJ, C, C++ and Rust through the WASI component model. Nothing leaves the tab.\n\nHe’s also wiring this site’s archive into WM3 — retrieval over the public posts — so answers like this one come with receipts.',
-      sources: [
-        { title: 'LILO', date: '2024–now', path: 'builds/lilo', url: LILO_URL },
-        {
-          title: 'Killing the Cloud Sandbox',
-          date: 'SRE Day 2026',
-          path: 'talks/killing-the-cloud-sandbox',
-          url: TALK_VIDEO_URL,
-        },
-      ],
-    };
-  }
-
-  if (has('microsoft', 'edge', 'leave', 'left', 'quit', 'webview', 'pwa')) {
-    return {
-      text: 'Five years in and around Microsoft Edge: three internships — PWA Hub in 2021, draggable window regions for Outlook in 2022, the first programmatic Find API in 2023 — then full-time from January 2024, leading the WebView2 Find on Page API end-to-end (14 features across Win32/C++, WinRT/C# and .NET), then media pipeline work upstream in Chromium.\n\nHe left in July 2026, not because of Edge but because LinkedInOrLeftOut — the side project — had grown into an eighteen-person team and one genuinely hard engineering question: how do you give a kid on a $60 Chromebook an instant, private coding environment? Answering that full-time is LILO.',
-      sources: [
-        { title: 'PWA Hub announcement', date: '2022', path: 'builds/pwa-hub', url: PWA_HUB_URL },
-        {
-          title: 'WebView2 release notes',
-          date: '2024',
-          path: 'builds/find-on-page',
-          url: WEBVIEW2_RELEASE_NOTES_URL,
-        },
-      ],
-    };
-  }
-
-  if (has('track', 'mile', 'captain', 'fast', '400', 'running', ' run')) {
-    return {
-      text: 'At UMD he captained the Division I track and field team, 2021–2023 — the official job description was “primary liaison between coaching staff and 30 athletes,” which meant a lot of phone calls. Two years as a Barry & Mary Gossett Fellow ran alongside it.\n\nWhat he runs these days isn’t in the archive, and he’d probably like to keep it that way.',
-      sources: [{ title: 'Life', date: 'the UMD years', path: 'life', route: 'life' }],
-    };
-  }
-
-  if (has('resume', 'interview', 'hire', 'job search')) {
-    return {
-      text: 'He documented the whole method — the one he teaches students — in “How to tailor your resume.” Short version: tailor to the job description without fabricating a single metric. The 15-minute AI-assisted version became the Techsgiving workshop.',
-      sources: [
-        {
-          title: 'How to tailor your resume',
-          date: '2025',
-          path: 'writing/how-to-tailor-your-resume',
-          url: RESUME_POST_URL,
-        },
-        {
-          title: 'AI Resumes That Land Interviews',
-          date: 'Nov 2025',
-          path: TECHSGIVING_SLIDES,
-          url: TECHSGIVING_SLIDES,
-        },
-      ],
-    };
-  }
-
-  if (has('wm3', 'name', 'stand for', 'mad', 'called')) {
-    return {
-      text: 'WM3 originally stood for “What Made Max Mad?” — three M’s, courtesy of the Mad Max moniker, and a running list of things that set him off. Unclear instructions, mostly.\n\nOver time the framing shifted to a better question: “What Made Max?” This site — and this interface — is the attempt to answer it.',
-      sources: [{ title: 'The name', date: 'site lore', path: 'life#the-name', route: 'life' }],
-    };
-  }
-
-  return NOT_IN_ARCHIVE;
-}

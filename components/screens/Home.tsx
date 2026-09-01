@@ -420,7 +420,7 @@ const Home: React.FC<Props> = ({ onNavigate, askValue, onAskChange, onAsk }) => 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 28px', ...serif(16) }}>
             {[
               'What is Max building right now?',
-              'Why did he leave Microsoft?',
+              'How does he tailor a resume?',
               'What does WM3 actually stand for?',
             ].map((q) => (
               <a

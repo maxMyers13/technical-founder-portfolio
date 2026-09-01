@@ -1,0 +1,39 @@
+{
+  "$comment": [
+    "Deny-by-default allowlist for the Ask WM3 archive index.",
+    "Only paths matching `allow` are ever read by scripts/ingest.mjs.",
+    "",
+    "READ THIS BEFORE ADDING A PATH: the index is a static file served to the",
+    "browser, so every chunk that goes in becomes public, verbatim, to anyone",
+    "who opens devtools. That is fine for linkedin/posts, which are already",
+    "published on LinkedIn and carry a canonical `url` in their frontmatter.",
+    "It is NOT fine for anything unpublished. The voice pages, framework.md,",
+    "playbook.md and learnings.md are deliberately excluded on those grounds —",
+    "they are the playbook, not the posts. Publishing them is a decision to",
+    "make on purpose, not by widening a glob."
+  ],
+  "sourceRepo": "llmwiki (maxMyers13/wm3GPT)",
+  "$siteComment": "wm3/site/*.md is written in this repo and describes pages already published on wm3.ai — the builds, talks and life chapters the Ask WM3 copy promises to answer from. It is authored to be public.",
+  "allow": ["linkedin/posts/*.md"],
+  "deny": [
+    "linkedin/voice/**",
+    "linkedin/framework.md",
+    "linkedin/playbook.md",
+    "linkedin/learnings.md",
+    "linkedin/analytics/**",
+    "linkedin/_backlog.md",
+    "linkedin/_workflows/**",
+    "curriculum/**",
+    "pathion/**",
+    "raw/**",
+    "_phase2*",
+    "_templates/**",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "index.md",
+    "log.md",
+    "_followups.md"
+  ],
+  "frontmatterKeep": ["date", "url", "topic", "register"],
+  "$frontmatterComment": "analytics, ai_score, ai_role and notes are dropped at ingest — engagement numbers are data, not quotable knowledge."
+}

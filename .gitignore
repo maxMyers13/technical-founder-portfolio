@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .vercel
 .venv-pdf
+
+# transformers.js model cache from scripts/ingest.mjs
+node_modules/@huggingface/transformers/.cache/
