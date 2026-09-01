@@ -19,9 +19,19 @@ Rules:
 - Two short paragraphs at most. No preamble, no "based on the passages".
 - Do not invent numbers, dates, employers or names that are not in the passages.`;
 
-// Gemini 3 Flash, on the AI Gateway free tier ($5 of credits a month per team).
-// Override without a deploy by setting WM3_MODEL in the project's env.
-const MODEL = process.env.WM3_MODEL ?? 'google/gemini-3-flash';
+/**
+ * The AI Gateway free tier carries a subset of the catalog, and no Gemini model
+ * is in it — google/gemini-3-flash answers 403 RestrictedModelsError without
+ * purchased credits. This default is a free-tier model so the lane works today.
+ *
+ * To run Gemini 3 Flash: buy AI Gateway credits, then set
+ *   WM3_MODEL=google/gemini-3-flash
+ * in the project env. No deploy needed, and nothing else here changes.
+ */
+const MODEL = process.env.WM3_MODEL ?? 'minimax/minimax-m3';
+
+/** Free-tier rate limits are per model, so keep somewhere to fail over to. */
+const FALLBACK_MODELS = ['minimax/minimax-m2.7', 'inclusionai/ling-3.0-flash-fin'];
 
 /** Ceilings so a stray client can't run up a bill on an open endpoint. */
 const MAX_QUESTION_CHARS = 2000;
@@ -68,10 +78,7 @@ export async function POST(req: Request): Promise<Response> {
       maxOutputTokens: 600,
       providerOptions: {
         gateway: {
-          // The free tier cannot use Vertex, which is where this slug resolves
-          // by default. Google's own endpoint serves the same model and is
-          // available, so pin the provider rather than the model.
-          only: ['google'],
+          models: FALLBACK_MODELS,
           tags: ['feature:ask-wm3', 'site:wm3.ai'],
         },
       },
