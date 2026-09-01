@@ -242,3 +242,13 @@ img {
     column-count: 1 !important;
   }
 }
+
+/* Section headers put the title and its aside on one line, which is too much
+   for a phone — stack them so neither gets squeezed. */
+@media (max-width: 820px) {
+  [data-m='sec-head'] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+}

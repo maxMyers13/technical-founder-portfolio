@@ -169,7 +169,7 @@ const Home: React.FC<Props> = ({ onNavigate, askValue, onAskChange, onAsk }) => 
       </section>
 
       <section style={section}>
-        <div style={sectionHeader}>
+        <div data-m="sec-head" style={sectionHeader}>
           <h2 style={sectionTitle}>Now</h2>
           <span style={serif(16)}>hand-updated · August 2026</span>
         </div>
@@ -210,7 +210,7 @@ const Home: React.FC<Props> = ({ onNavigate, askValue, onAskChange, onAsk }) => 
       </section>
 
       <section style={section}>
-        <div style={sectionHeader}>
+        <div data-m="sec-head" style={sectionHeader}>
           <h2 style={sectionTitle}>Writing</h2>
           <a
             href="#"
@@ -271,7 +271,7 @@ const Home: React.FC<Props> = ({ onNavigate, askValue, onAskChange, onAsk }) => 
       </section>
 
       <section style={section}>
-        <div style={sectionHeader}>
+        <div data-m="sec-head" style={sectionHeader}>
           <h2 style={sectionTitle}>Builds</h2>
           <a
             href="#"
@@ -354,7 +354,7 @@ const Home: React.FC<Props> = ({ onNavigate, askValue, onAskChange, onAsk }) => 
       </section>
 
       <section style={section}>
-        <div style={sectionHeader}>
+        <div data-m="sec-head" style={sectionHeader}>
           <h2 style={sectionTitle}>Ask WM3</h2>
           <span style={serif(16)}>an interface to the archive — not the man</span>
         </div>
@@ -441,7 +441,7 @@ const Home: React.FC<Props> = ({ onNavigate, askValue, onAskChange, onAsk }) => 
       </section>
 
       <section style={{ ...section, padding: '110px 44px 128px' }}>
-        <div style={sectionHeader}>
+        <div data-m="sec-head" style={sectionHeader}>
           <h2 style={sectionTitle}>Changelog</h2>
           <span style={serif(16)}>proof this thing is alive</span>
         </div>

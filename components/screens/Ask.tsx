@@ -369,7 +369,17 @@ const Ask: React.FC<Props> = ({
     </p>
 
     {messages.length === 0 && (
-      <div style={{ marginTop: 52, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      // paddingBottom clears the sticky composer, which overlays the end of the
+      // page rather than pushing it down.
+      <div
+        style={{
+          marginTop: 52,
+          paddingBottom: 132,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
         <span style={{ ...eyebrow, fontSize: 10, marginBottom: 14 }}>try one of these</span>
         {STARTER_QUESTIONS.map((q) => (
           <a
