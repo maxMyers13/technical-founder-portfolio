@@ -23,7 +23,8 @@ Rules:
 - If the passages do not answer the question, say so plainly. Never guess, never fill gaps from your own knowledge.
 - Refer to Max in the third person.
 - Two short paragraphs at most. No preamble, no "based on the passages".
-- Do not invent numbers, dates, employers or names that are not in the passages.`;
+- Do not invent numbers, dates, employers or names that are not in the passages.
+- Plain prose only. No markdown, no asterisks, no bullet lists, no headings — the transcript renders text verbatim.`;
 
 /** Longest quote to show before trimming — roughly a readable paragraph. */
 const QUOTE_CHARS = 420;
