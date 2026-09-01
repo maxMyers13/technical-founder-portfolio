@@ -27,14 +27,48 @@ const CHAPTERS: { label: string; text: string }[] = [
   },
 ];
 
+/**
+ * Captions say only what the photo's own capture date and the post archive can
+ * support. Where the event isn't confirmed, the caption gives the month and
+ * stops rather than inventing a name.
+ */
 const PHOTOS = [
-  { placeholder: 'a real photo from track days', caption: 'track days · photo pending', tilt: -1 },
   {
-    placeholder: 'a real photo from a workshop',
-    caption: 'a LinkedInOrLeftOut workshop · photo pending',
+    src: '/assets/photos/track-race.jpg',
+    placeholder: 'Max mid-race in a Maryland singlet',
+    caption: 'still fast-ish, once',
+    tilt: -1,
+  },
+  {
+    src: '/assets/photos/microsoft-campus.jpg',
+    placeholder: 'Max at the Microsoft campus sign',
+    caption: 'Redmond · July 2026, days before he left',
     tilt: 1.2,
   },
-  { placeholder: 'a real photo of Baltimore', caption: 'Baltimore · photo pending', tilt: -0.6 },
+  {
+    src: '/assets/photos/microsoft-badge.jpg',
+    placeholder: 'a Microsoft intern badge held up to the camera',
+    caption: 'the intern badge · 2023',
+    tilt: -0.6,
+  },
+  {
+    src: '/assets/photos/yc-startup-school.jpg',
+    placeholder: 'Max in front of the Y Combinator wall',
+    caption: 'YC Startup School · July 2026',
+    tilt: 0.8,
+  },
+  {
+    src: '/assets/photos/on-stage-room.jpg',
+    placeholder: 'Max presenting to a full room',
+    caption: 'a full room · December 2025',
+    tilt: -1.1,
+  },
+  {
+    src: '/assets/photos/the-team.jpg',
+    placeholder: 'Max and three others in suits',
+    caption: 'the team · October 2025',
+    tilt: 0.5,
+  },
 ];
 
 const FRAGMENTS: { label: string; body: React.ReactNode }[] = [
@@ -66,7 +100,7 @@ const FRAGMENTS: { label: string; body: React.ReactNode }[] = [
     label: 'friendships',
     body: (
       <>
-        The people who’ll show up in the photos above, once there are photos.{' '}
+        Some of them are in the photos above. The rest haven’t been photographed yet.{' '}
         <em style={{ ...serif(15), fontSize: 'inherit' }}>to be written</em>
       </>
     ),

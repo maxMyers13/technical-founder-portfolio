@@ -1,6 +1,7 @@
 import React from 'react';
 import { EMAIL, SANDBOX_SLIDES, TALK_VIDEO_URL, TECHSGIVING_SLIDES } from '../../constants';
 import { Route } from '../../types';
+import PhotoFrame from '../ui/PhotoFrame';
 import { pageIntro, pageTitle, serif, solidButton } from '../ui/styles';
 
 interface Props {
@@ -26,9 +27,19 @@ const Speaking: React.FC<Props> = ({ onNavigate }) => (
       and what broke. Conferences, podcasts, campus sessions and workshops.
     </p>
 
+    <div style={{ marginTop: 48, maxWidth: 520 }}>
+      <PhotoFrame
+        src="/assets/photos/on-stage-conference.jpg"
+        placeholder="Max speaking on stage"
+        caption="on stage · November 2024"
+        tilt={-0.8}
+        height={300}
+      />
+    </div>
+
     <div
       style={{
-        marginTop: 56,
+        marginTop: 40,
         border: '1px solid var(--line)',
         borderRadius: 12,
         overflow: 'hidden',

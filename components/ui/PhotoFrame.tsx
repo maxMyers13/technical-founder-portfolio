@@ -1,7 +1,10 @@
 import React from 'react';
+import { serif } from './styles';
 
 interface Props {
-  /** What the photo will be, once there is one. */
+  /** The photo. Without one the frame is honest about being empty. */
+  src?: string;
+  /** Alt text when there is a photo; the promise of one when there isn't. */
   placeholder: string;
   caption: string;
   /** Degrees of tilt, so a row of frames reads as a stack rather than a grid. */
@@ -10,10 +13,12 @@ interface Props {
 }
 
 /**
- * A tilted photo frame that is honest about being empty. Stands in for the
- * design's <image-slot>, which only exists inside the design canvas.
+ * A tilted photo frame. Real photos are cropped to the frame rather than the
+ * frame to the photo, so a row stays level whatever mix of portrait and
+ * landscape goes into it. Stands in for the design's <image-slot>, which only
+ * exists inside the design canvas.
  */
-const PhotoFrame: React.FC<Props> = ({ placeholder, caption, tilt, height }) => (
+const PhotoFrame: React.FC<Props> = ({ src, placeholder, caption, tilt, height }) => (
   <div
     style={{
       display: 'flex',
@@ -27,32 +32,44 @@ const PhotoFrame: React.FC<Props> = ({ placeholder, caption, tilt, height }) => 
       transform: `rotate(${tilt}deg)`,
     }}
   >
-    <div
-      style={{
-        height,
-        border: '1px dashed var(--hair)',
-        borderRadius: 2,
-        background: 'var(--bg2)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 16px',
-        textAlign: 'center',
-        fontFamily: "'Newsreader', serif",
-        fontStyle: 'italic',
-        fontSize: 14,
-        lineHeight: 1.5,
-        color: 'var(--mute)',
-      }}
-    >
-      {placeholder}
-    </div>
+    {src ? (
+      <img
+        src={src}
+        alt={placeholder}
+        loading="lazy"
+        style={{
+          width: '100%',
+          height,
+          objectFit: 'cover',
+          borderRadius: 2,
+          display: 'block',
+        }}
+      />
+    ) : (
+      <div
+        style={{
+          height,
+          border: '1px dashed var(--hair)',
+          borderRadius: 2,
+          background: 'var(--bg2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 16px',
+          textAlign: 'center',
+          fontFamily: "'Newsreader', serif",
+          fontStyle: 'italic',
+          fontSize: 14,
+          lineHeight: 1.5,
+          color: 'var(--mute)',
+        }}
+      >
+        {placeholder}
+      </div>
+    )}
     <span
       style={{
-        fontFamily: "'Newsreader', serif",
-        fontStyle: 'italic',
-        fontSize: 13,
-        color: 'var(--mute)',
+        ...serif(13),
         textAlign: 'center',
       }}
     >
