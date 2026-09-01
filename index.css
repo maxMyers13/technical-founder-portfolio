@@ -228,15 +228,17 @@ img {
   }
 }
 
-/* The Life photo wall narrows before the rest of the mobile pass kicks in. */
+/* The Life photo wall narrows before the rest of the mobile pass kicks in.
+   !important because the column count is set inline, and an inline style beats
+   a stylesheet rule — the same reason every rule in the block above needs it. */
 @media (max-width: 900px) {
   [data-m='wall'] {
-    column-count: 2;
+    column-count: 2 !important;
   }
 }
 
 @media (max-width: 560px) {
   [data-m='wall'] {
-    column-count: 1;
+    column-count: 1 !important;
   }
 }
