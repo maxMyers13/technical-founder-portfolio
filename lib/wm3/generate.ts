@@ -1,3 +1,4 @@
+import { AnswerLane } from '../../types';
 import { Match } from './archive';
 import { createSession, nanoIsReady } from './nano';
 
@@ -61,37 +62,47 @@ export function quoteAnswer(matches: Match[]): string {
 }
 
 /**
- * Streams an answer as text deltas. Uses Nano when it is ready and falls back
- * to quoting if it is not, or if it fails part-way.
+ * Streams an answer as text deltas.
+ *
+ * `onLane` fires as soon as the lane is settled — which is only once the first
+ * token actually arrives, not when Nano is merely reported ready. A session
+ * that opens and then dies still ends up quoting, and the reader should be
+ * told what wrote the words they are looking at, not what was attempted.
  */
 export async function* streamAnswer(
   question: string,
   matches: Match[],
   signal?: AbortSignal,
+  onLane?: (lane: AnswerLane) => void,
 ): AsyncGenerator<string> {
   if (nanoIsReady()) {
     const session = await createSession(SYSTEM_PROMPT);
     if (session) {
+      // Tracked outside the try: if Nano dies part-way we must not append
+      // quotes to what it already wrote, which would read as one answer in
+      // two voices. Whatever landed stands on its own.
+      let emitted = '';
       try {
         const input = `Passages:\n\n${buildContext(matches)}\n\nQuestion: ${question}`;
         const stream = session.promptStreaming(input);
 
         // Chrome has shipped both delta chunks and cumulative snapshots here.
-        let emitted = '';
         for await (const piece of stream as AsyncIterable<string>) {
           if (signal?.aborted) break;
           const delta = piece.startsWith(emitted) ? piece.slice(emitted.length) : piece;
+          if (!emitted && delta.trim()) onLane?.('nano');
           emitted += delta;
           yield delta;
         }
-        session.destroy?.();
-        if (emitted.trim()) return;
       } catch (err) {
-        // A half-written on-device answer is worse than a clean set of quotes.
-        console.warn('[WM3] Gemini Nano generation failed, quoting instead', err);
+        console.warn('[WM3] Gemini Nano generation failed', err);
+      } finally {
+        session.destroy?.();
       }
+      if (emitted.trim()) return;
     }
   }
 
+  onLane?.('quoted');
   yield quoteAnswer(matches);
 }

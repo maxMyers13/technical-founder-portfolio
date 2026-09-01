@@ -40,6 +40,9 @@ export interface Source {
   route?: Route;
 }
 
+/** `nano` wrote the answer on-device; `quoted` read it straight out of the archive. */
+export type AnswerLane = 'nano' | 'quoted';
+
 export interface UserMessage {
   role: 'user';
   text: string;
@@ -57,6 +60,8 @@ export interface AssistantMessage {
   pendingNote?: string;
   /** The typewriter still has text to reveal. */
   streaming: boolean;
+  /** Which lane produced this answer — set once generation picks one. */
+  lane?: AnswerLane;
   error: boolean;
 }
 

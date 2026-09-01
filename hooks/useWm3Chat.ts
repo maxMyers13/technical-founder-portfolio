@@ -124,7 +124,10 @@ export function useWm3Chat() {
         });
         startTicker();
 
-        for await (const delta of streamAnswer(question, relevant, controller.signal)) {
+        const stream = streamAnswer(question, relevant, controller.signal, (lane) =>
+          patchLast({ lane }),
+        );
+        for await (const delta of stream) {
           if (controller.signal.aborted) break;
           full.current += delta;
         }
@@ -183,6 +186,7 @@ export function useWm3Chat() {
       text: '',
       sources: [],
       notFound: false,
+      lane: undefined,
     });
     setStreaming(true);
     void run(lastQuestion.current);

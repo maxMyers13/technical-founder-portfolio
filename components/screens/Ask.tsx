@@ -1,7 +1,7 @@
 import React from 'react';
 import { STARTER_QUESTIONS } from '../../constants';
 import { NanoStatus } from '../../lib/wm3/nano';
-import { AssistantMessage, Message, Route, Source } from '../../types';
+import { AnswerLane, AssistantMessage, Message, Route, Source } from '../../types';
 import { serif } from '../ui/styles';
 
 const eyebrow: React.CSSProperties = {
@@ -10,6 +10,12 @@ const eyebrow: React.CSSProperties = {
   letterSpacing: '.16em',
   textTransform: 'uppercase',
   color: 'var(--mute)',
+};
+
+/** Says which lane wrote a given answer, so the receipts cover the model too. */
+const LANE_NOTE: Record<AnswerLane, string> = {
+  nano: 'written on your device by Gemini Nano, from the sources below',
+  quoted: 'quoted straight from the archive — no model wrote this',
 };
 
 /** One line about which lane is answering, and how far off the other one is. */
@@ -192,6 +198,10 @@ const AssistantBubble: React.FC<{
               Try again
             </a>
           </div>
+        )}
+
+        {settled && message.lane && (
+          <span style={serif(13)}>{LANE_NOTE[message.lane]}</span>
         )}
 
         {settled && message.sources.length > 0 && (
