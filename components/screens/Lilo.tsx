@@ -68,7 +68,7 @@ const Lilo: React.FC<Props> = ({ onNavigate }) => (
 
     <div style={{ marginTop: 52 }}>
       <DemoClip
-        src="/assets/demos/browser-preview.mp4"
+        src="/assets/demos/capstone-live-preview.mp4"
         label="A student edits files on the left while their web app builds and runs on the right, with no server in the loop."
         caption="the student’s app compiling and running in the tab — esbuild in the browser, their own /api handler answering the request"
       />
@@ -89,7 +89,7 @@ const Lilo: React.FC<Props> = ({ onNavigate }) => (
         </p>
         <div style={clipGrid}>
           <DemoClip
-            src="/assets/demos/python-debugger.mp4"
+            src="/assets/demos/debugger.mp4"
             label="Stepping through Python line by line inside the editor, watching variables update."
             caption="the Python step debugger, running in the tab"
           />
@@ -122,7 +122,7 @@ const Lilo: React.FC<Props> = ({ onNavigate }) => (
         </p>
         <div style={clipGrid}>
           <DemoClip
-            src="/assets/demos/predict-before-run.mp4"
+            src="/assets/demos/exercise-commit-reveal.mp4"
             label="An exercise that locks the Run button until the student has written down what they think the code will do, then shows predicted against actual."
             caption="Run stays locked until you commit to a prediction"
           />
