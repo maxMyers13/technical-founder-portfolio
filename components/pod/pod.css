@@ -1485,7 +1485,9 @@
     background: rgba(60, 60, 66, 0.94);
     border-color: rgba(14, 14, 16, 0.9);
   }
-  .pod:has(.pod-scene--gl) .pod-welcome { bottom: calc(118px + env(safe-area-inset-bottom)) !important; padding: 6px 14px; }
+  /* the site's dock (craft.css) is the phone navigation, so the room's own chip row steps aside */
+  .pod:has(.pod-scene--gl) .pod-console { display: none; }
+  .pod:has(.pod-scene--gl) .pod-welcome { bottom: calc(92px + env(safe-area-inset-bottom)) !important; padding: 6px 14px; }
   .pod:has(.pod-scene--gl) .pod-welcome__sub { display: none; }
   .pod:has(.pod-scene--gl) .pod-back { top: calc(72px + env(safe-area-inset-top)); left: 14px; }
 
@@ -1505,7 +1507,7 @@
     max-width: none;
     max-height: 90svh;
     margin: 0;
-    padding: 0 0 env(safe-area-inset-bottom);
+    padding: 0 0 calc(86px + env(safe-area-inset-bottom));
     overflow-y: auto;
     overscroll-behavior: contain;
     border-width: 3px 0 0;

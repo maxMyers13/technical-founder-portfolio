@@ -648,3 +648,90 @@
   .spk-formats { grid-template-columns: 1fr; }
   .spk-bio { padding: 16px; }
 }
+
+/* ---------- The phone dock ---------- */
+
+.tabbar { display: none; }
+@media (max-width: 760px) {
+  .tabbar {
+    display: block;
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 200;
+    font-family: 'Nunito', system-ui, sans-serif;
+  }
+  .tabbar__pill {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    padding: 6px;
+    border-radius: 999px;
+    background: rgba(24, 20, 18, 0.72);
+    border: 1px solid rgba(255, 246, 229, 0.14);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    backdrop-filter: blur(20px) saturate(1.5);
+  }
+  .tabbar__tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 246, 229, 0.72);
+    font: 800 11px/1 'Nunito', system-ui, sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.18s, color 0.18s;
+  }
+  .tabbar__tab[aria-current='page'] { background: rgba(255, 246, 229, 0.15); color: #fff6e5; }
+  .tabbar__tab[aria-expanded='true'] { color: #fff6e5; }
+  .tabbar__tab:active { transform: scale(0.96); }
+  .tabbar__tab:focus-visible { outline: 2px solid #ffe9a8; outline-offset: -2px; }
+  .tabbar__more {
+    list-style: none;
+    margin: 0 0 8px auto;
+    padding: 6px;
+    width: min(260px, 100%);
+    border-radius: 22px;
+    background: rgba(24, 20, 18, 0.86);
+    border: 1px solid rgba(255, 246, 229, 0.14);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    backdrop-filter: blur(20px) saturate(1.5);
+    animation: tabbar-pop 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .tabbar__more a {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    color: #fff6e5;
+    text-decoration: none;
+  }
+  .tabbar__more a b { font-size: 16px; font-weight: 900; }
+  .tabbar__more a span { font-size: 12px; font-weight: 700; color: rgba(255, 246, 229, 0.62); }
+  .tabbar__more a[aria-current='page'],
+  .tabbar__more a:active { background: rgba(255, 246, 229, 0.12); }
+  @keyframes tabbar-pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+
+  /* the dock takes over the phone navigation: page headers keep only the name, and nothing hides under the dock */
+  .craft-head__back,
+  .craft-head nav { display: none; }
+  .craft-head { padding-top: calc(10px + env(safe-area-inset-top)); }
+  .craft > footer { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+  .tabbar__more { animation: none; }
+}

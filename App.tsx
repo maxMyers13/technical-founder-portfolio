@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Footer from './components/Footer';
 import CraftHeader from './components/craft/CraftHeader';
 import LevelBanner from './components/craft/LevelBanner';
+import TabBar from './components/craft/TabBar';
 import './components/craft/craft.css';
 import Ask from './components/screens/Ask';
 import Builds from './components/screens/Builds';
@@ -144,6 +145,9 @@ const App: React.FC = () => {
       )}
 
       {route !== 'home' && <Footer onNavigate={navigate} onNavigateToName={navigateToName} />}
+
+      {/* Phones: one dock at the bottom of every screen, the room included. */}
+      <TabBar route={route} onNavigate={navigate} />
     </div>
   );
 };
