@@ -329,6 +329,11 @@
 }
 .craft .craft-hide { visibility: hidden; }
 
+/* a list's last row doesn't draw its own rule when the next section opens with one: no doubled dividers */
+.craft-sheet [style*='border-bottom: 1px solid var(--line)']:last-child { border-bottom: 0 !important; }
+/* pill labels stay on one line */
+.craft-sheet [style*='border-radius: 9999px'] { white-space: nowrap; }
+
 /* links read as the dialogs' links */
 .craft-sheet .h-underline,
 .craft-sheet .h-ink { color: #8a2e1c; font-weight: 800; }
@@ -500,6 +505,7 @@
 .spk-lede { font-size: clamp(18px, 1.8vw, 22px); line-height: 1.55; color: var(--ink); font-weight: 600; }
 .spk-stats { display: flex; gap: 12px; list-style: none; margin: 0; padding: 0; justify-content: flex-end; }
 .spk-stat {
+  box-sizing: border-box;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   width: 118px; height: 118px; flex-shrink: 0; border-radius: 50%;
   border: 4px solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
@@ -635,13 +641,14 @@
   /* index.css pads every main > section on phones for the old home page; the Speaking sections set their own spacing */
   .craft .spk > section { padding: 0 !important; }
   .craft .spk .spk-mini { font-size: 13px !important; }
-  .spk-stats { flex-wrap: wrap; justify-content: center; }
-  .spk-stat { width: 92px; height: 92px; }
+  .spk-stats { flex-wrap: nowrap; gap: 10px; justify-content: center; }
+  .spk-stat { width: 88px; height: 88px; padding: 6px; }
+  .spk-stat span { font-size: 10.5px; }
   .spk-stat b { font-size: 30px; }
   .spk-card img { height: 200px; }
   .spk-prints { grid-template-columns: repeat(2, 1fr); }
   .spk-prints .spk-print:nth-child(n + 3) { display: none; }
-  .spk-year { grid-template-columns: 1fr; gap: 10px; }
+  .spk-year { grid-template-columns: 1fr; gap: 16px; }
   .spk-year__label { position: static; }
   .spk-gig { grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 14px; }
   .spk-gig__when { grid-column: 1 / -1; }

@@ -189,7 +189,7 @@ const Life: React.FC<Props> = ({ onNavigate }) => (
         */}
         <div data-m="wall" style={{ columnCount: 3, columnGap: 16, marginTop: 44 }}>
           {PHOTOS.map((p) => (
-            <div key={p.caption} style={{ breakInside: 'avoid', marginBottom: 16 }}>
+            <div key={p.caption} style={{ breakInside: 'avoid', paddingTop: 14, marginBottom: 4 }}>
               <PhotoFrame {...p} height={180} />
             </div>
           ))}
