@@ -137,6 +137,8 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
       },
     });
     roomRef.current = room;
+    // A deep link (#now/library) set `open` before the room existed, so aim the camera now that it does.
+    room.focus(worldFromHash());
     return () => {
       room.dispose();
       roomRef.current = null;
