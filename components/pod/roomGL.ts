@@ -1708,9 +1708,6 @@ export function startPodRoom(
   // the paths poster stays above, right of the stage photo
   const posterTex = paintTex(() => P.pathsPoster());
   add(...framed(onWing(right, 0.36, 0.3), 0.13, 0.13 / 0.75, posterTex, {}, [0.1, 0.08, 0.06]));
-  // SOUL RESONANCE: an inked three-slice panel, a nod to Fire Force and Soul Eater
-  const resonanceTex = paintTex(() => P.soulTriptych());
-  add(...framed(onWing(right, 0.6, 0.3), 0.14, 0.175, resonanceTex, {}, [0.1, 0.08, 0.06], 0.06));
   // lanyards hang from a hook on the right door post
   add(D(ball, 2, [0.6, 0.6, 0.62], 0.68, 0.2, 0.345, 0.012, 0.012, 0.012, { rough: 0.2, metal: 1 }));
   // one badge per event in events.ts; each reports a screen anchor so a real button can open that event
