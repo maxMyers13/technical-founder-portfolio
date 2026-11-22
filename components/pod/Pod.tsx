@@ -209,7 +209,7 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
               <button
                 key={w.id}
                 {...hot(w.id)}
-                className="pod-hit"
+                className={`pod-hit${w.id === 'lilo' || w.id === 'ask' || w.id === 'builds' ? '' : ' pod-hit--quiet'}`}
                 ref={(el) => {
                   hitRefs.current[w.id] = el;
                 }}
@@ -227,7 +227,7 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
           {glOn && !atDesk && (
             <button
               type="button"
-              className="pod-hit pod-hit--spot"
+              className="pod-hit pod-hit--spot pod-hit--quiet"
               tabIndex={-1}
               aria-hidden="true"
               ref={(el) => {
@@ -408,7 +408,7 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
 
           <div className="pod-welcome">
             <h1 className="pod-display pod-welcome__title">Welcome to Max's pod</h1>
-            <p className="pod-welcome__sub">Click anything with a label, or use the controller below.</p>
+            <p className="pod-welcome__sub">Look around. Everything in the room opens something.</p>
           </div>
 
           <nav className="pod-pad" aria-label="Controller: go anywhere">

@@ -1376,3 +1376,18 @@
 @media (max-width: 520px) {
   .pod-wall { grid-template-columns: repeat(2, 1fr); padding: 12px; gap: 16px 12px; }
 }
+
+/* Only the three worlds in the window keep a bubble. Everything else is an area you click: the bubble shows
+   while the pointer (or keyboard focus) is on it. */
+.pod-hit--quiet { width: clamp(84px, 10cqw, 170px); height: clamp(84px, 10cqw, 170px); transform: translate(-50%, -35%); display: grid; place-items: start center; }
+.pod-hit--quiet .pod-tag { opacity: 0; transition: opacity 0.12s; pointer-events: none; }
+.pod-hit--quiet:hover .pod-tag, .pod-hit--quiet:focus-visible .pod-tag { opacity: 1; }
+.pod-padhit__label { opacity: 0; transition: opacity 0.12s; }
+.pod-padhit:hover .pod-padhit__label, .pod-padhit:focus-visible .pod-padhit__label { opacity: 1; }
+
+/* the welcome sits at the foot of the room so it does not cover the shrine's roof */
+.pod .pod-welcome { top: auto !important; bottom: 7%; height: auto; }
+
+/* zoomed in to an area: drag to look around it */
+.pod-scene--zoomed .pod-room { cursor: grab; touch-action: none; }
+.pod-scene--dragging, .pod-scene--dragging .pod-room { cursor: grabbing; user-select: none; }

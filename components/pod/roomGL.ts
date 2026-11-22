@@ -58,6 +58,8 @@ type Draw = {
   screen: boolean;
   /** Lift with this section on hover without being its anchor (the other parts of a multi-part model). */
   follow: WorldId | Place | null;
+  /** Jelly: this part belongs to a soft body centred here. It squashes, stretches and rocks about that point. */
+  jelly?: readonly [number, number, number];
   wrap: number;
   disc: number;
   tex: WebGLTexture | null;
@@ -1336,7 +1338,52 @@ export function startPodRoom(
   let tipKey = '';
   // Clicking a book that is showing its hover card opens it (on Audible, or a book search for manga).
   let tipHref = '';
+  // Once the camera has gone in to an area, dragging looks around it: the view follows the hand, like sliding a
+  // photo. pan is in world units (x, y, z), eased into the camera's focus point, and cleared when the area changes.
+  const pan = [0, 0, 0];
+  let dragFrom: { x: number; y: number; id: number } | null = null;
+  let dragged = false;
+  const scene = canvas.parentElement;
+  const dragStart = (e: PointerEvent) => {
+    if (!focusId || e.button !== 0 || !(e.target instanceof Element) || e.target.closest('a, button, .pod-dialog')) return;
+    dragFrom = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    dragged = false;
+  };
+  const dragMove = (e: PointerEvent) => {
+    if (!dragFrom || e.pointerId !== dragFrom.id) return;
+    const dx = e.clientX - dragFrom.x;
+    const dy = e.clientY - dragFrom.y;
+    if (!dragged && Math.abs(dx) + Math.abs(dy) < 5) return;
+    dragged = true;
+    scene?.classList.add('pod-scene--dragging');
+    dragFrom.x = e.clientX;
+    dragFrom.y = e.clientY;
+    const k = 1.25 / Math.max(1, canvas.clientHeight); // room units per pixel at the zoomed-in distance
+    if (focusId === 'desk') {
+      // looking down at the desk: left-right slides along the wall, up-down slides across the desk's depth
+      pan[0] += (-dx * Math.cos(left.ry) + dy * Math.sin(left.ry)) * k * 0.8;
+      pan[2] += (dx * Math.sin(left.ry) + dy * Math.cos(left.ry)) * k * 0.8;
+    } else {
+      pan[0] -= dx * k;
+      pan[1] += dy * k;
+    }
+    pan[0] = Math.max(-0.7, Math.min(0.7, pan[0]));
+    pan[1] = Math.max(-0.45, Math.min(0.45, pan[1]));
+    pan[2] = Math.max(-0.4, Math.min(0.4, pan[2]));
+  };
+  const dragEnd = () => {
+    dragFrom = null;
+    scene?.classList.remove('pod-scene--dragging');
+  };
+  document.addEventListener('pointerdown', dragStart);
+  document.addEventListener('pointermove', dragMove);
+  document.addEventListener('pointerup', dragEnd);
+  document.addEventListener('pointercancel', dragEnd);
   const openBook = (e: MouseEvent) => {
+    if (dragged) {
+      dragged = false; // the click that ends a drag opens nothing
+      return;
+    }
     if (!tipHref || !(e.target instanceof Element) || e.target.closest('a, button, .pod-overlay')) return;
     window.open(tipHref, '_blank', 'noopener,noreferrer');
   };
@@ -1559,21 +1606,35 @@ export function startPodRoom(
   });
 
 
+  // small 3x3 rotation helpers, shared by the controller and the measured props
+  type M3 = number[][];
+  const rot3 = (ax: number, ay: number, az: number): M3 => {
+    const [cx, sx, cy, sy, cz, sz] = [Math.cos(ax), Math.sin(ax), Math.cos(ay), Math.sin(ay), Math.cos(az), Math.sin(az)];
+    return [
+      [cz * cy, cz * sy * sx - sz * cx, cz * sy * cx + sz * sx],
+      [sz * cy, sz * sy * sx + cz * cx, sz * sy * cx - cz * sx],
+      [-sy, cy * sx, cy * cx],
+    ];
+  };
+  const mul3 = (a: M3, b: M3): M3 => a.map((row) => [0, 1, 2].map((c) => row[0] * b[0][c] + row[1] * b[1][c] + row[2] * b[2][c]));
+  const apply3 = (m: M3, v: number[]) => m.map((row) => row[0] * v[0] + row[1] * v[1] + row[2] * v[2]);
+  /** A rotation matrix back to the rx, ry, rz the renderer composes (Rz * Ry * Rx). */
+  const euler = (m: M3) => ({ rx: Math.atan2(m[2][1], m[2][2]), ry: Math.asin(Math.max(-1, Math.min(1, -m[2][0]))), rz: Math.atan2(m[1][0], m[0][0]) });
   // ---------- the controller: a DualShock 4, propped against the bottom of the window board ----------
   // The body is the real silhouette (traced outline, rounded moulded edge), leaning back onto the board.
   // Each button reports a screen anchor so a real HTML button can sit on it.
   const padHits: { id: `pad:${string}`; x: number; y: number; z: number }[] = [];
   {
-    const BODY: [number, number, number] = [0.075, 0.078, 0.09];
+    const BODY: [number, number, number] = [0.115, 0.12, 0.135];
     const TRIM: [number, number, number] = [0.15, 0.155, 0.17];
-    const S = 1.1; // width in room units
-    const DEPTH = 0.1; // body thickness (in outline units, scaled by S)
-    const lean = 0.62; // tipped well back so its top rests on the board and the window stays in view
+    const S = 0.62; // width in room units: big enough to press, low enough to leave the window clear
+    const DEPTH = 0.15; // body thickness (in outline units, scaled by S)
+    const lean = 0.5; // tipped back so its top rests on the board and the window stays in view
     const cos = Math.cos(lean);
     const sin = Math.sin(lean);
     const cx = 0;
     const cy = floorY + 0.385 * S * cos + (DEPTH / 2) * S * sin;
-    const boardFront = 0.24; // front face of the window frame
+    const boardFront = 0.385; // it leans on the front edge of the sill
     const cz = boardFront + 0.315 * S * sin + (DEPTH / 2) * S * cos + 0.004;
     /** A point on the pad: lx, ly in outline units on the top face, lz above it (outline units). */
     const padAt = (lx: number, ly: number, lz = 0) => {
@@ -1582,8 +1643,21 @@ export function startPodRoom(
       return { x: cx + lx * S, y: cy + y * cos + z * sin, z: cz - y * sin + z * cos };
     };
     const FACE = -lean; // rx for parts lying on the top face
-    const body = upload(gl, slabMesh(dualShockOutline(), DEPTH, 0.035));
-    add(D(body, 2, BODY, cx, cy, cz, S, S, S, { rx: FACE, rough: 0.3, wrap: 0.25 }));
+    const body = upload(gl, slabMesh(dualShockOutline(), DEPTH, 0.06));
+    add(D(body, 2, BODY, cx, cy, cz, S, S, S, { rx: FACE, rough: 0.42, wrap: 0.3 }));
+    // The outline alone is a flat slab. A real pad is moulded: fat handles that swell above and below the face,
+    // a belly underneath, and bumpers and triggers on the top edge. `spin` turns a part in the plane of the face.
+    const bulge = (lx: number, ly: number, lz: number, rx: number, ry: number, rz: number, spin: number, tint = BODY, rough = 0.42) => {
+      const q = padAt(lx, ly, lz);
+      add(D(ball, 2, tint, q.x, q.y, q.z, rx * S, ry * S, rz * S, { ...euler(mul3(rot3(FACE, 0, 0), rot3(0, 0, spin))), rough, wrap: 0.3 }));
+    };
+    for (const sx of [-1, 1]) {
+      bulge(sx * 0.385, -0.19, -DEPTH / 2, 0.105, 0.19, 0.125, sx * 0.2); // the handle
+      bulge(sx * 0.37, -0.33, -DEPTH / 2 - 0.01, 0.075, 0.07, 0.11, 0); // its rounded end
+      bulge(sx * 0.33, 0.3, -DEPTH / 2 + 0.01, 0.13, 0.035, 0.055, 0, TRIM, 0.3); // bumper
+      bulge(sx * 0.33, 0.31, -DEPTH / 2 - 0.07, 0.1, 0.05, 0.07, 0, TRIM, 0.3); // trigger
+    }
+    bulge(0, 0.08, -DEPTH - 0.005, 0.36, 0.2, 0.06, 0); // the belly underneath
     // the touchpad: a slightly raised, finely textured matte panel, with the light bar glowing along its top edge
     const tp = padAt(0, 0.175, 0.006);
     add(D(box, 2, TRIM, tp.x, tp.y, tp.z, 0.3 * S, 0.165 * S, 0.012 * S, { rx: FACE, rough: 0.75 }));
@@ -1757,19 +1831,6 @@ export function startPodRoom(
     const n = parseInt(hex.slice(1), 16);
     return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
   };
-  type M3 = number[][];
-  const rot3 = (ax: number, ay: number, az: number): M3 => {
-    const [cx, sx, cy, sy, cz, sz] = [Math.cos(ax), Math.sin(ax), Math.cos(ay), Math.sin(ay), Math.cos(az), Math.sin(az)];
-    return [
-      [cz * cy, cz * sy * sx - sz * cx, cz * sy * cx + sz * sx],
-      [sz * cy, sz * sy * sx + cz * cx, sz * sy * cx - cz * sx],
-      [-sy, cy * sx, cy * cx],
-    ];
-  };
-  const mul3 = (a: M3, b: M3): M3 => a.map((row) => [0, 1, 2].map((c) => row[0] * b[0][c] + row[1] * b[1][c] + row[2] * b[2][c]));
-  const apply3 = (m: M3, v: number[]) => m.map((row) => row[0] * v[0] + row[1] * v[1] + row[2] * v[2]);
-  /** A rotation matrix back to the rx, ry, rz the renderer composes (Rz * Ry * Rx). */
-  const euler = (m: M3) => ({ rx: Math.atan2(m[2][1], m[2][2]), ry: Math.asin(Math.max(-1, Math.min(1, -m[2][0]))), rz: Math.atan2(m[1][0], m[0][0]) });
   const FINISH = {
     matte: { kind: 2, rough: 0.8, wrap: 0.2 },
     satin: { kind: 2, rough: 0.42, wrap: 0.2 },
@@ -2169,39 +2230,164 @@ export function startPodRoom(
     );
   }
 
-  // ---------- the floor: Smash night (console + four controllers), track spikes, bike helmet, the dog's bed ----------
-  // track spikes in front of the desk
-  [-0.03, 0.05].forEach((o, k) => {
-    add(
-      D(box, 2, [0.85, 0.16, 0.14], -1.12 + o, floorY + 0.022, 1.2 + k * 0.02, 0.04, 0.03, 0.1, { ry: 0.3 + k * 0.2, rough: 0.5 }),
-      D(box, 2, [0.95, 0.95, 0.92], -1.12 + o, floorY + 0.004, 1.2 + k * 0.02, 0.042, 0.008, 0.102, { ry: 0.3 + k * 0.2, rough: 0.6 }),
+  // ---------- the floor: Smash night (console + four controllers) ----------
+
+  // ---------- the shrine gate around the window: black timber, blood-red lacquer, two tiers of upswept roof,
+  // bone tusks down the pillars and horns on the ridge. An original design, menacing on purpose. ----------
+  const shrine: Draw[] = [];
+  {
+    const TIMBER: [number, number, number] = [0.085, 0.07, 0.075];
+    const LACQUER: [number, number, number] = [0.42, 0.06, 0.07];
+    const BONE: [number, number, number] = [0.86, 0.82, 0.7];
+    const STONE: [number, number, number] = [0.3, 0.29, 0.31];
+    const z0 = 0.28;
+    for (const sx of [-1, 1]) {
+      const px = sx * 0.69;
+      shrine.push(
+        D(box, 2, TIMBER, px, 0.02, z0, 0.13, 1.62, 0.13, { rough: 0.7 }),
+        D(box, 2, STONE, px, floorY + 0.045, z0, 0.22, 0.09, 0.22, { rough: 0.95 }),
+        D(box, 2, LACQUER, px, -0.6, z0, 0.15, 0.05, 0.15, { rough: 0.4 }),
+        D(box, 2, LACQUER, px, 0.6, z0, 0.15, 0.05, 0.15, { rough: 0.4 }),
+        // a paper lantern on each pillar, burning red
+        D(box, 5, [1, 0.42, 0.22], px, 0.27, z0 + 0.09, 0.07, 0.11, 0.05, { rough: 0.4 }),
+        D(box, 2, TIMBER, px, 0.335, z0 + 0.09, 0.09, 0.02, 0.07, { rough: 0.6 }),
+        D(box, 2, TIMBER, px, 0.205, z0 + 0.09, 0.09, 0.02, 0.07, { rough: 0.6 }),
+      );
+      // the upswept ends of both roofs
+      shrine.push(
+        D(box, 2, TIMBER, sx * 1.07, 0.865, z0 + 0.03, 0.3, 0.045, 0.36, { rz: sx * 0.42, rough: 0.75 }),
+        D(box, 2, LACQUER, sx * 1.075, 0.84, z0 + 0.03, 0.28, 0.02, 0.3, { rz: sx * 0.42, rough: 0.4 }),
+        D(box, 2, TIMBER, sx * 0.74, 0.975, z0 + 0.03, 0.22, 0.04, 0.3, { rz: sx * 0.42, rough: 0.75 }),
+        // horns on the ridge
+        D(ball, 2, BONE, sx * 0.36, 1.015, z0 + 0.03, 0.014, 0.04, 0.014, { rz: sx * -0.5, rough: 0.5 }),
+      );
+    }
+    shrine.push(
+      D(box, 2, LACQUER, 0, 0.745, z0, 1.62, 0.06, 0.11, { rough: 0.4 }), // the tie beam
+      D(box, 2, TIMBER, 0, 0.79, z0 + 0.03, 1.5, 0.035, 0.2, { rough: 0.7 }),
+      D(box, 2, TIMBER, 0, 0.825, z0 + 0.03, 1.9, 0.045, 0.36, { rough: 0.75 }), // lower roof
+      D(box, 2, LACQUER, 0, 0.8, z0 + 0.03, 1.84, 0.02, 0.3, { rough: 0.4 }),
+      D(box, 2, TIMBER, 0, 0.885, z0 + 0.03, 1.0, 0.08, 0.2, { rough: 0.7 }),
+      D(box, 2, LACQUER, 0, 0.925, z0 + 0.03, 1.2, 0.02, 0.26, { rough: 0.4 }),
+      D(box, 2, TIMBER, 0, 0.945, z0 + 0.03, 1.3, 0.04, 0.3, { rough: 0.75 }), // upper roof
+      D(box, 2, TIMBER, 0, 0.985, z0 + 0.03, 0.7, 0.04, 0.1, { rough: 0.7 }), // ridge
+      // a row of fangs under the tie beam, so the doorway reads as a mouth
+      ...[-4, -3, -2, -1, 0, 1, 2, 3, 4].map((k) =>
+        D(ball, 2, BONE, k * 0.118, 0.7 - (Math.abs(k) === 4 ? 0.02 : 0), z0 + 0.02, Math.abs(k) === 4 ? 0.024 : 0.017, Math.abs(k) === 4 ? 0.065 : 0.04 - (k % 2 ? 0.008 : 0), 0.017, { rough: 0.5 }),
+      ),
+      // a bone crest over the doorway
+      D(ball, 2, BONE, 0, 0.745, z0 + 0.07, 0.05, 0.04, 0.03, { rough: 0.5 }),
+      D(ball, 2, BONE, -0.085, 0.75, z0 + 0.065, 0.016, 0.05, 0.016, { rz: 0.5, rough: 0.5 }),
+      D(ball, 2, BONE, 0.085, 0.75, z0 + 0.065, 0.016, 0.05, 0.016, { rz: -0.5, rough: 0.5 }),
     );
-  });
-  // a bike helmet from the Ironman relay
-  add(
-    D(ball, 2, [0.85, 0.18, 0.16], 1.0, floorY + 0.01, 0.95, 0.075, 0.06, 0.1, { ry: -0.4, rough: 0.3 }),
-    D(box, 2, [0.95, 0.95, 0.95], 1.0, floorY + 0.06, 0.95, 0.02, 0.01, 0.16, { ry: -0.4, rough: 0.3 }),
-  );
-  // the dog's bed in the corner (the room smells like dog, after all)
-  add(
-    D(ball, 1, [0.42, 0.3, 0.22], 1.2, floorY + 0.01, 0.82, 0.15, 0.04, 0.1, { ry: -0.5, wrap: 0.8, rough: 1 }),
-    D(ball, 1, [0.83, 0.74, 0.6], 1.2, floorY + 0.03, 0.82, 0.11, 0.025, 0.07, { ry: -0.5, wrap: 0.8, rough: 1 }),
-  );
+  }
 
-
+  // ---------- Ask WM3: a soul. A pale, glowing orb sewn together with stitched seams, a great screw
+  // driven through its crown and wisps streaming off the top. A nod to Soul Eater, built from primitives (no
+  // character, no traced art). Every part bobs in step and lifts together on hover. ----------
+  const soul: Draw[] = [];
+  {
+    const C = [-0.33, 0.37, 0.4] as const;
+    const R = 0.125;
+    const K = R / 0.21; // every fixed size below was drawn for a 0.21 orb
+    const live = { bob: 0.02, phase: 1.2, follow: 'ask' as const, jelly: C };
+    type V3 = [number, number, number];
+    const norm = (v: V3): V3 => {
+      const l = Math.hypot(v[0], v[1], v[2]) || 1;
+      return [v[0] / l, v[1] / l, v[2] / l];
+    };
+    const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    /** The renderer's rx, ry, rz for a part whose local x, y, z axes should point along ax, ay, az. */
+    const facing = (ax: V3, ay: V3, az: V3) => euler([[ax[0], ay[0], az[0]], [ax[1], ay[1], az[1]], [ax[2], ay[2], az[2]]]);
+    const at3 = (n: V3, r: number): V3 => [C[0] + n[0] * r, C[1] + n[1] * r, C[2] + n[2] * r];
+    soul.push(D(ball, 1, [0.5, 0.8, 1], C[0], C[1], C[2], R, R, R, { rough: 0.3, wrap: 0.95, bob: 0.02, phase: 1.2, anchor: 'ask', anchorDy: -0.2, jelly: C }));
+    // seams: each runs over the orb through three points; a dark thread with pale cross-stitches every few degrees
+    const THREAD: V3 = [0.2, 0.22, 0.26];
+    const STITCH: V3 = [0.95, 0.92, 0.8];
+    const seams: [V3, V3, V3][] = [
+      [[-0.12, 0.97, 0.2], [0.22, 0.12, 0.96], [0.5, -0.82, 0.28]],
+      [[-0.8, 0.52, 0.3], [-0.5, 0.0, 0.87], [-0.12, -0.55, 0.83]],
+      [[0.45, 0.84, 0.3], [0.78, 0.25, 0.57], [0.93, -0.3, 0.2]],
+    ];
+    for (const [a, m, b] of seams) {
+      const pts: V3[] = [];
+      const N = 22;
+      for (let k = 0; k <= N; k++) {
+        const t = k / N;
+        // a quadratic blend through the middle point, pushed back out onto the sphere
+        const w0 = (1 - t) * (1 - t);
+        const w1 = 2 * t * (1 - t) * 1.6;
+        const w2 = t * t;
+        pts.push(norm([a[0] * w0 + m[0] * w1 + b[0] * w2, a[1] * w0 + m[1] * w1 + b[1] * w2, a[2] * w0 + m[2] * w1 + b[2] * w2]));
+      }
+      for (let k = 0; k < N; k++) {
+        const n = norm([pts[k][0] + pts[k + 1][0], pts[k][1] + pts[k + 1][1], pts[k][2] + pts[k + 1][2]]);
+        if (n[2] < 0.32) continue; // nothing on the rim: thread seen edge-on reads as bumps on the outline
+        const along = norm([pts[k + 1][0] - pts[k][0], pts[k + 1][1] - pts[k][1], pts[k + 1][2] - pts[k][2]]);
+        const across = cross(n, along);
+        const len = Math.hypot(pts[k + 1][0] - pts[k][0], pts[k + 1][1] - pts[k][1], pts[k + 1][2] - pts[k][2]) * R;
+        const q = at3(n, R + 0.001 * K);
+        soul.push(D(box, 2, THREAD, q[0], q[1], q[2], len * 1.15, 0.005 * K, 0.004 * K, { ...facing(along, across, n), rough: 0.8, ...live }));
+        if (k % 2 === 0) {
+          const s2 = at3(n, R + 0.003 * K);
+          // most stitches lie straight across the seam; every fifth is a cross
+          soul.push(D(box, 2, STITCH, s2[0], s2[1], s2[2], 0.04 * K, 0.011 * K, 0.006 * K, { ...facing(across, along, n), rough: 0.7, ...live }));
+          if (k % 10 === 4) {
+            const d1 = norm([across[0] + along[0], across[1] + along[1], across[2] + along[2]]);
+            soul.push(D(box, 2, STITCH, s2[0], s2[1], s2[2], 0.04 * K, 0.011 * K, 0.007 * K, { ...facing(d1, cross(n, d1), n), rough: 0.7, ...live }));
+          }
+        }
+      }
+    }
+    // the screw: a slotted head on a thick shaft, driven in at the upper left
+    {
+      const STEEL: V3 = [0.2, 0.23, 0.26];
+      const axis = norm([-0.62, 0.72, 0.3]);
+      const u = norm(cross([0, 0, 1], axis));
+      const v = cross(u, axis);
+      const neg = (w: V3): V3 => [-w[0], -w[1], -w[2]];
+      const tubeRot = facing(u, axis, v);
+      const shaft = at3(axis, R + 0.03 * K);
+      const head = at3(axis, R + 0.105 * K);
+      const headTop = at3(axis, R + (0.105 + 0.0275) * K);
+      const headBottom = at3(axis, R + (0.105 - 0.0275) * K);
+      soul.push(
+        D(tube, 2, STEEL, shaft[0], shaft[1], shaft[2], 0.07 * K, 0.1 * K, 0.07 * K, { ...tubeRot, rough: 0.45, ...live }),
+        D(tube, 2, STEEL, head[0], head[1], head[2], 0.2 * K, 0.055 * K, 0.2 * K, { ...tubeRot, rough: 0.4, ...live }),
+        D(coin, 2, [0.26, 0.29, 0.33], headTop[0], headTop[1], headTop[2], 0.2 * K, 0.2 * K, 1, { ...facing(u, neg(v), axis), rough: 0.4, ...live }),
+        D(coin, 2, STEEL, headBottom[0], headBottom[1], headBottom[2], 0.2 * K, 0.2 * K, 1, { ...facing(u, v, neg(axis)), rough: 0.5, ...live }),
+        D(box, 2, [0.07, 0.08, 0.1], headTop[0] + axis[0] * 0.002, headTop[1] + axis[1] * 0.002, headTop[2] + axis[2] * 0.002, 0.18 * K, 0.006 * K, 0.026 * K, { ...facing(u, axis, v), rough: 0.8, ...live }),
+      );
+    }
+    // wisps streaming off the crown: three tongues, each a run of overlapping spheres that tapers to a point, so
+    // the outline is one smooth flame instead of separate lumps
+    const tongues: [number, number, number, number, number, number, number][] = [
+      // from (x, y), bending through (x, y), to (x, y), root radius: all in 0.21-orb units
+      [0.05, 0.15, 0.15, 0.31, 0.35, 0.31, 0.068],
+      [0.12, 0.1, 0.25, 0.2, 0.38, 0.16, 0.05],
+      [-0.03, 0.17, 0.0, 0.31, 0.11, 0.38, 0.05],
+    ];
+    for (const [x0, y0, x1, y1, x2, y2, r0] of tongues) {
+      const N = 26;
+      for (let k = 0; k <= N - 2; k++) { // stop just short of the end: the last spheres are too small to overlap
+        const t = k / N;
+        const x = (1 - t) * (1 - t) * x0 + 2 * t * (1 - t) * x1 + t * t * x2;
+        const y = (1 - t) * (1 - t) * y0 + 2 * t * (1 - t) * y1 + t * t * y2;
+        const r = r0 * Math.pow(1 - t, 0.8) * K;
+        soul.push(D(ball, 1, [0.56, 0.84, 1], C[0] + x * K, C[1] + y * K, C[2], r, r, r, { rough: 0.3, wrap: 0.95, ...live }));
+      }
+    }
+  }
 
   const draws: Draw[] = [
     D(box, 7, [0.16, 0.18, 0.32], 0, 0.15, -0.85, 7.2, 2.6, 0.04, { rough: 1, wrap: 0.4 }), // wide enough that no void shows past the side walls
     D(box, 7, [0.18, 0.2, 0.36], leftBig.x, leftBig.y, leftBig.z, leftBig.sx, leftBig.sy, leftBig.sz, { ry: leftBig.ry, rough: 1 }),
     D(box, 7, [0.14, 0.16, 0.3], right.x, right.y, right.z, right.sx, right.sy, right.sz, { ry: right.ry, rough: 1 }),
-    D(box, 0, [0.62, 0.45, 0.3], -0.68, 0.02, 0.28, 0.11, 1.62, 0.1, { rough: 0.94 }),
-    D(box, 0, [0.62, 0.45, 0.3], 0.68, 0.02, 0.28, 0.11, 1.62, 0.1, { rough: 0.94 }),
-    D(arch, 0, [0.64, 0.47, 0.31], 0, 0.08, 0.2, 1, 1, 1, { rough: 0.94 }),
+    D(arch, 2, [0.34, 0.05, 0.06], 0, 0.08, 0.2, 1, 1, 1, { rough: 0.45 }),
+    ...shrine,
     D(box, 1, [0.55, 0.32, 0.48], 0, 0.05, 0.02, 0.98, 1.18, 0.03, { wrap: 0.65, rough: 1 }),
     D(rug, 6, [0.48, 0.2, 0.28], -0.3, -0.78, 0.55, 4.9, 1, 1.9, { rough: 1, wrap: 0.45 }),
-    D(box, 0, [0.45, 0.32, 0.22], 0, -0.42, 0.34, 0.92, 0.06, 0.08, { rough: 0.9 }),
-    D(box, 5, [1, 0.91, 0.62], -0.72, 0.28, 0.22, 0.07, 0.09, 0.05, { rough: 0.4 }),
-    D(box, 5, [1, 0.91, 0.62], 0.78, 0.26, 0.22, 0.07, 0.09, 0.05, { rough: 0.4 }),
+    D(box, 2, [0.085, 0.07, 0.075], 0, -0.42, 0.34, 0.92, 0.06, 0.08, { rough: 0.7 }), // the shrine's sill, in the same black timber
     D(ball, 5, [1, 0.93, 0.7], 0.22, 0.62, 0.32, 0.045, 0.055, 0.045),
     D(ball, 5, [1, 0.93, 0.7], 0.3, 0.66, 0.32, 0.05, 0.06, 0.05),
     D(ball, 5, [1, 0.93, 0.7], 0.38, 0.62, 0.32, 0.045, 0.055, 0.045),
@@ -2216,14 +2402,7 @@ export function startPodRoom(
       anchor: 'lilo',
       anchorDy: 0.27,
     }),
-    D(ball, 1, [0.96, 0.93, 0.86], -0.32, 0.38, 0.4, 0.09, 0.09, 0.09, {
-      wrap: 0.7,
-      rough: 0.8,
-      bob: 0.02,
-      phase: 1.2,
-      anchor: 'ask',
-      anchorDy: -0.14,
-    }),
+    ...soul,
     D(ball, 1, [0.7, 0.6, 0.43], 0.3, 0.02, 0.4, 0.1, 0.1, 0.1, {
       wrap: 0.55,
       rough: 0.85,
@@ -2232,9 +2411,6 @@ export function startPodRoom(
       anchor: 'builds',
       anchorDy: 0.16,
     }),
-    D(ball, 1, [0.78, 0.26, 0.18], -0.28, -0.36, 0.4, 0.1, 0.06, 0.07, { wrap: 0.7, rough: 1 }),
-    D(box, 3, [0.73, 0.39, 0.24], 0.32, -0.4, 0.38, 0.07, 0.06, 0.07, { rough: 0.7 }),
-    D(box, 1, [0.3, 0.54, 0.24], 0.32, -0.34, 0.38, 0.04, 0.1, 0.02, { rz: -0.4, wrap: 0.8, rough: 1 }),
   ];
 
   const SHADOW = 2048;
@@ -2471,10 +2647,42 @@ export function startPodRoom(
     }
   };
 
+  /** When the pointer last arrived on each hoverable thing, for the jelly wobble. */
+  const jellyKick: { [id: string]: number } = {};
+  let lastHover: string | null = null;
   const modelOf = (d: Draw, time: number) => {
     const bob = calm ? 0 : Math.sin(time * 1.3 + d.phase) * d.bob;
     const lift = (d.anchor ?? d.follow) && (d.anchor ?? d.follow) === hoverId ? 0.06 : 0;
     const spin = calm ? 0 : time * d.spin;
+    if (d.jelly && !calm) {
+      // A soft body: a slow breathing squash and stretch plus a gentle rock, and a springy wobble that rings and
+      // dies away after the pointer touches it. Volume is kept (wider when shorter). Parts beyond the body, the
+      // wisps and the screw head, swing further and a beat later, like hair following a head.
+      const id = d.anchor ?? d.follow;
+      const since = id && jellyKick[id] !== undefined ? time - jellyKick[id] : 99;
+      const ring = Math.exp(-since * 2.6);
+      const rx0 = d.x - d.jelly[0];
+      const ry0 = d.y - d.jelly[1];
+      const rz0 = d.z - d.jelly[2];
+      const reach = Math.hypot(rx0, ry0, rz0);
+      const lag = Math.min(1.2, reach * 5);
+      const a = 0.045 * Math.sin(time * 2.3 + d.phase) + ring * 0.16 * Math.sin(since * 13 - lag);
+      const rock = 0.06 * Math.sin(time * 1.7 + d.phase + 1 - lag * 0.6) * (1 + lag) + ring * 0.2 * Math.sin(since * 10 + 0.6 - lag) * (1 + lag);
+      const wide = 1 / Math.sqrt(1 + a);
+      const px = rx0 * wide;
+      const py = ry0 * (1 + a);
+      const pz = rz0 * wide;
+      const c = Math.cos(rock);
+      const sn = Math.sin(rock);
+      const own = reach < 1e-6; // the body itself: it changes shape; the parts on it only ride along
+      return trs(
+        d.jelly[0] + px * c - py * sn,
+        d.jelly[1] + px * sn + py * c + bob,
+        d.jelly[2] + pz + lift,
+        d.rx, d.ry + spin, d.rz + rock,
+        own ? d.sx * wide : d.sx, own ? d.sy * (1 + a) : d.sy, own ? d.sz * wide : d.sz,
+      );
+    }
     return trs(d.x, d.y + bob, d.z + lift, d.rx, d.ry + spin, d.rz, d.sx, d.sy, d.sz);
   };
 
@@ -2537,14 +2745,14 @@ export function startPodRoom(
         const lift = focusId === 'library' ? -0.4 : 0;
         const shiftX = focusId === 'library' ? -0.22 : 0;
         const ease = calm || camK < 0.01 ? 1 : 1 - Math.exp(-dt * 6);
-        camFocus[0] += (d.x + shiftX - camFocus[0]) * ease;
-        camFocus[1] += (d.y + lift - camFocus[1]) * ease;
-        camFocus[2] += (d.z - camFocus[2]) * ease;
+        camFocus[0] += (d.x + shiftX + pan[0] - camFocus[0]) * ease;
+        camFocus[1] += (d.y + lift + pan[1] - camFocus[1]) * ease;
+        camFocus[2] += (d.z + pan[2] - camFocus[2]) * ease;
       }
     }
     camK = calm ? goalK : camK + (goalK - camK) * (1 - Math.exp(-dt * 4.5));
     const kk = camK * camK * (3 - 2 * camK);
-    const baseEye: [number, number, number] = [-0.25 * (1 - kk) + pointerX * 0.22 * (1 - kk), 0.26 - pointerY * 0.1 * (1 - kk), 4.25];
+    const baseEye: [number, number, number] = [-0.16 * (1 - kk) + pointerX * 0.22 * (1 - kk), 0.26 - pointerY * 0.1 * (1 - kk), 4.25];
     // a section's object fills the frame; the desk is a place you step up to, so the camera goes closer
     const near = focusId === 'library' ? 0.57 : 0.58; // far enough back that all six shelves and the top fit
     const toward: [number, number, number] = [
@@ -2558,7 +2766,7 @@ export function startPodRoom(
       baseEye[2] + (camFocus[2] + Math.cos(left.ry) * 0.2 - baseEye[2]) * kk,
     ];
     const eye: [number, number, number] = focusId === 'desk' ? overhead : toward;
-    const target: [number, number, number] = [-0.25 + (camFocus[0] + 0.25) * kk, -0.04 + (camFocus[1] + 0.04) * kk, camFocus[2] * kk];
+    const target: [number, number, number] = [-0.16 + (camFocus[0] + 0.16) * kk, -0.04 + (camFocus[1] + 0.04) * kk, camFocus[2] * kk];
     const view = lookAt(eye, target, [0, 1, 0]);
     // Keep the whole room in frame at any window shape: 34 degrees tall at 16:9, wider when the window is narrower.
     const fovY = 2 * Math.atan(Math.tan((17 * Math.PI) / 180) * Math.max(1, (16 / 9) / (bw / bh)));
@@ -2623,6 +2831,10 @@ export function startPodRoom(
         nearest = dist;
         hoverId = d.anchor;
       }
+    }
+    if (hoverId !== lastHover) {
+      if (hoverId) jellyKick[hoverId] = time;
+      lastHover = hoverId;
     }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, shadowFb);
@@ -2813,7 +3025,9 @@ export function startPodRoom(
 
   return {
     focus: (id) => {
+      if (id !== focusId) pan[0] = pan[1] = pan[2] = 0;
       focusId = id;
+      scene?.classList.toggle('pod-scene--zoomed', !!id);
     },
     setCalm: (next) => {
       calm = next;
@@ -2825,6 +3039,10 @@ export function startPodRoom(
     dispose: () => {
       tip.remove();
       document.removeEventListener('click', openBook);
+      document.removeEventListener('pointerdown', dragStart);
+      document.removeEventListener('pointermove', dragMove);
+      document.removeEventListener('pointerup', dragEnd);
+      document.removeEventListener('pointercancel', dragEnd);
       modelAbort.abort();
       cancelAnimationFrame(raf);
       failed = true;
