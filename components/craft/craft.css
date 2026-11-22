@@ -632,6 +632,9 @@
 }
 @media (max-width: 760px) {
   .craft-sheet > main.spk { padding: 32px 20px 48px !important; gap: 40px; }
+  /* index.css pads every main > section on phones for the old home page; the Speaking sections set their own spacing */
+  .craft .spk > section { padding: 0 !important; }
+  .craft .spk .spk-mini { font-size: 13px !important; }
   .spk-stats { flex-wrap: wrap; justify-content: center; }
   .spk-stat { width: 92px; height: 92px; }
   .spk-stat b { font-size: 30px; }
