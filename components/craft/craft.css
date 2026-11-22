@@ -1,0 +1,411 @@
+/*
+ * The craft skin: every page off the pod, in the pod's materials. Cardboard, felt, stitching, stickers and
+ * popit buttons, the same palette as the room and its dialogs.
+ *
+ * The pages are written with inline styles on the site's colour tokens, so most of the work here is redefining
+ * those tokens inside .craft. The rest restyles the inline borders and fonts the pages share, by matching the
+ * inline style text (the same trick index.css uses for its mobile rules).
+ */
+
+.craft {
+  --ink: #1f150e;
+  --body: #4a3424;
+  --mute: #7d5d40;
+  --bg: #fff6e5;
+  --bg2: #f6e3c4;
+  --card: #fffaf0;
+  --line: #c9a27a;
+  --hair: #a8835d;
+  --nav: #140e0a;
+  --shadow: 6px 6px 0 #1f150e;
+  --cream: #fff6e5;
+  --peach: #f4c9a0;
+  --gold: #e8b23a;
+  --cardboard: #c9a27a;
+  --card-dark: #8c6a48;
+  --red: #b83a26;
+  --teal: #2f6f6b;
+  --plum: #5b4b8a;
+  --night: #140e0a;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: 'Nunito', system-ui, sans-serif;
+  /* corrugated cardboard: faint flutes over a warm brown */
+  background:
+    repeating-linear-gradient(90deg, rgba(60, 38, 20, 0.07) 0 3px, transparent 3px 11px),
+    radial-gradient(120% 80% at 50% 0%, #d8b48a, #b88d62);
+  color-scheme: light;
+}
+.craft-display,
+.craft h1,
+.craft h2,
+.craft h3 {
+  font-family: 'Bagel Fat One', 'Nunito', system-ui, sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  font-synthesis: none;
+}
+.craft :focus-visible { outline: 3px solid var(--plum); outline-offset: 3px; }
+
+/* ---------- Header ---------- */
+
+.craft-head {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 20px;
+  background: var(--night);
+  border-bottom: 4px solid var(--ink);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+}
+.craft-head__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px 0 12px;
+  border-radius: 999px;
+  border: 3px solid var(--ink);
+  background: var(--gold);
+  color: var(--ink);
+  font: 900 15px 'Nunito', system-ui, sans-serif;
+  box-shadow: 0 4px 0 #8a6414;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.craft-head__back:hover { transform: translateY(-1px); }
+.craft-head__back:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a6414; }
+.craft-head__brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-right: auto;
+  color: var(--cream);
+}
+.craft-head__name { font-size: 24px; line-height: 1; }
+.craft-head__role { font-size: 13px; font-weight: 700; color: var(--peach); }
+.craft-head__nav { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.craft-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 2px solid #5a4632;
+  background: #3a3a40;
+  color: var(--cream);
+  font: 800 14px 'Nunito', system-ui, sans-serif;
+  box-shadow: 0 3px 0 #0e0e10;
+}
+.craft-chip i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0e0e10; flex-shrink: 0; }
+.craft-chip:hover { background: #4a4a52; }
+.craft-chip[aria-current='page'] { background: var(--cream); color: var(--night); border-color: var(--cream); }
+.craft-head :focus-visible { outline-color: #ffe9a8; }
+
+/* ---------- The level banner: a CSS 3D diorama ---------- */
+
+.lvl {
+  --rx: 6deg;
+  --ry: 0deg;
+  position: relative;
+  max-width: 1180px;
+  margin: 28px auto 0;
+  padding: 0 20px;
+  height: clamp(220px, 30vw, 340px);
+  perspective: 1100px;
+  perspective-origin: 50% 30%;
+}
+.lvl--compact { height: clamp(180px, 22vw, 240px); }
+.lvl__set {
+  position: relative;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lvl__back {
+  position: absolute;
+  inset: 0 0 14%;
+  border: 4px solid var(--ink);
+  border-radius: 26px 26px 8px 8px;
+  /* felt in the page's colour, with a stitched border */
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.08), transparent 40%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 6px),
+    var(--felt);
+  box-shadow: inset 0 0 0 10px rgba(0, 0, 0, 0.12), inset 0 -30px 50px rgba(0, 0, 0, 0.3);
+  transform: translateZ(-60px);
+}
+.lvl__back::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border: 3px dashed rgba(255, 246, 229, 0.45);
+  border-radius: 18px 18px 4px 4px;
+}
+.lvl__floor {
+  /* the stage: a cardboard lip across the front, with its top surface tipped back into the set */
+  position: absolute;
+  left: -1%;
+  right: -1%;
+  bottom: 0;
+  height: 15%;
+  transform-style: preserve-3d;
+  background:
+    repeating-linear-gradient(90deg, rgba(60, 38, 20, 0.14) 0 3px, transparent 3px 12px),
+    #a87c52;
+  border: 4px solid var(--ink);
+  border-radius: 4px 4px 12px 12px;
+}
+.lvl__floor::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  bottom: 100%;
+  height: 120px;
+  transform-origin: bottom center;
+  transform: rotateX(82deg);
+  background:
+    repeating-linear-gradient(90deg, rgba(60, 38, 20, 0.12) 0 3px, transparent 3px 12px),
+    #c9a27a;
+  border: 4px solid var(--ink);
+  border-bottom: 0;
+}
+.lvl__curtain {
+  position: absolute;
+  top: -6px;
+  bottom: 12%;
+  width: 7%;
+  background: repeating-linear-gradient(90deg, #8a2216 0 10px, #b83a26 10px 22px);
+  border: 4px solid var(--ink);
+  transform: translateZ(10px);
+}
+.lvl__curtain--l { left: -4px; border-radius: 26px 6px 40px 6px; }
+.lvl__curtain--r { right: -4px; border-radius: 6px 26px 6px 40px; }
+.lvl__sign {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%) translateZ(40px);
+  transform-origin: top center;
+  animation: lvl-swing 7s ease-in-out infinite;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.lvl__string { position: absolute; top: 0; width: 3px; height: 34px; background: var(--ink); }
+.lvl__string--l { left: 22%; }
+.lvl__string--r { right: 22%; }
+.lvl__board {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 30px 16px;
+  background: var(--cardboard);
+  border: 4px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: 8px 8px 0 var(--ink);
+  max-width: 70vw;
+}
+.lvl__title {
+  font-family: 'Bagel Fat One', 'Nunito', sans-serif;
+  font-size: clamp(36px, 7vw, 76px);
+  line-height: 1;
+  color: var(--cream);
+  /* sticker: a cream body inside a thick ink keyline */
+  -webkit-text-stroke: 3px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 5px 0 var(--ink);
+  white-space: nowrap;
+}
+.lvl__sub {
+  font-weight: 800;
+  font-size: clamp(12px, 1.4vw, 16px);
+  color: var(--ink);
+  background: var(--cream);
+  padding: 2px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  text-align: center;
+}
+.lvl__prop { position: absolute; transform-style: preserve-3d; }
+.lvl__cut { filter: drop-shadow(5px 6px 0 rgba(31, 21, 14, 0.55)); }
+.lvl__cut svg { display: block; width: 100%; height: auto; overflow: visible; }
+.lvl-tilt .lvl__cut { transform: rotate(-16deg); }
+.lvl-tilt-r .lvl__cut { transform: rotate(8deg); }
+.lvl-flip .lvl__cut { transform: scaleX(-1); }
+.lvl-bob .lvl__cut { animation: lvl-bob 5s ease-in-out infinite; }
+.lvl-bob2 .lvl__cut { animation: lvl-bob 4s ease-in-out -1.5s infinite; }
+.lvl-sway .lvl__cut { animation: lvl-swing 5s ease-in-out infinite; transform-origin: top center; }
+.lvl-spin .lvl__cut svg { animation: lvl-spin 14s linear infinite; }
+@keyframes lvl-swing { 0%, 100% { rotate: -1.6deg; } 50% { rotate: 1.6deg; } }
+@keyframes lvl-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@keyframes lvl-spin { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .lvl__set { transition: none; }
+  .lvl__sign, .lvl__cut, .lvl__cut svg { animation: none !important; }
+}
+
+/* ---------- The sheet the page sits on ---------- */
+
+.craft-sheet {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 22px auto 0;
+  padding: 0 20px 40px;
+}
+.craft-sheet > main {
+  position: relative;
+  margin-top: 0 !important;
+  padding-top: 48px !important;
+  padding-bottom: 72px !important;
+  background:
+    repeating-linear-gradient(90deg, rgba(43, 30, 22, 0.035) 0 2px, transparent 2px 10px),
+    var(--cream);
+  border: 4px solid var(--ink);
+  border-radius: 26px;
+  box-shadow: 10px 10px 0 var(--ink);
+}
+.craft-sheet > main::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border: 3px dashed var(--card-dark);
+  border-radius: 18px;
+  pointer-events: none;
+}
+/* The banner already names the page; the old title stays for screen readers, the old back link goes. */
+.craft .craft-dup {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.craft-sheet > main > a:first-child { display: none; }
+.craft-sheet > main > a:first-child + h1,
+.craft-sheet > main > a:first-child + span { margin-top: 0 !important; }
+.craft-sheet > main > .craft-dup + p { margin-top: 0 !important; }
+
+/* labels and captions: the Newsreader italic becomes the pod's bold Nunito */
+.craft [style*='Newsreader'] {
+  font-family: 'Nunito', system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+  color: var(--mute);
+}
+
+/* hairline cards become stitched felt-and-card panels with a hard shadow */
+.craft-sheet [style*='border: 1px solid var(--line)'] {
+  border: 3px solid var(--ink) !important;
+  border-radius: 18px !important;
+  box-shadow: 6px 6px 0 var(--ink);
+}
+.craft-sheet img[style*='border: 1px solid var(--line)'] {
+  border-radius: 10px !important;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+/* ruled dividers become stitching */
+.craft-sheet [style*='border-top: 1px solid var(--ink)'] { border-top: 3px dashed var(--card-dark) !important; }
+.craft-sheet [style*='border-bottom: 1px solid var(--ink)'] { border-bottom: 3px dashed var(--card-dark) !important; }
+.craft-sheet [style*='border-bottom: 1px solid var(--line)'] { border-bottom: 2px dashed var(--line) !important; }
+.craft-sheet [style*='border-top: 1px solid var(--line)'] { border-top: 2px dashed var(--line) !important; }
+
+/* pills (filters, lanes, sources) become the console's chunky chips */
+.craft-sheet [style*='border-radius: 9999px'] {
+  border: 2px solid var(--ink) !important;
+  font-weight: 800 !important;
+  box-shadow: 0 3px 0 var(--ink);
+}
+.craft .craft-hide { visibility: hidden; }
+
+/* links read as the dialogs' links */
+.craft-sheet .h-underline,
+.craft-sheet .h-ink { color: #8a2e1c; font-weight: 800; }
+.craft-sheet .h-underline:hover,
+.craft-sheet .h-ink:hover { color: #5e1d10; }
+.craft-sheet .h-row:hover { background: rgba(232, 178, 58, 0.18); }
+
+/* popit buttons */
+.craft .craft-btn,
+.craft .h-btn-solid,
+.craft .h-btn-outline,
+.craft .h-pill {
+  border-radius: 999px !important;
+  border: 3px solid var(--ink) !important;
+  font-weight: 900 !important;
+  box-shadow: 0 5px 0 var(--ink);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.craft .h-btn-solid { background: var(--red) !important; color: var(--cream) !important; }
+.craft .h-btn-outline { background: var(--gold) !important; color: var(--ink) !important; }
+.craft .craft-btn:hover,
+.craft .h-btn-solid:hover,
+.craft .h-btn-outline:hover,
+.craft .h-pill:hover { transform: translateY(-1px); }
+.craft .craft-btn:active,
+.craft .h-btn-solid:active,
+.craft .h-btn-outline:active,
+.craft .h-pill:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+
+/* text fields: a cream card with an ink keyline */
+.craft-sheet textarea,
+.craft-sheet input[type='text'] {
+  background: #fffaf0 !important;
+  border: 3px solid var(--ink) !important;
+  border-radius: 16px !important;
+  color: var(--ink) !important;
+  font-family: 'Nunito', system-ui, sans-serif !important;
+}
+
+/* ---------- Footer: the pod's dark strip ---------- */
+
+.craft > footer {
+  margin-top: 24px;
+  background: var(--night) !important;
+  border-top: 4px solid var(--ink) !important;
+}
+.craft > footer,
+.craft > footer [style*='Newsreader'],
+.craft > footer a { color: var(--peach) !important; }
+.craft > footer a { font-weight: 800; }
+.craft > footer a:hover { color: var(--cream) !important; }
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 760px) {
+  .craft-head { padding: 10px 12px; gap: 8px; }
+  .craft-head__role { display: none; }
+  .craft-head nav { width: 100%; }
+  .craft-head__nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .craft-head__nav li { scroll-snap-align: start; flex-shrink: 0; }
+  .lvl { margin-top: 16px; padding: 0 12px; height: 190px; }
+  .lvl__curtain { width: 9%; }
+  .lvl__board { padding: 10px 18px 12px; box-shadow: 5px 5px 0 var(--ink); }
+  .lvl__title { -webkit-text-stroke-width: 2px; text-shadow: 0 3px 0 var(--ink); }
+  .lvl__sub { display: none; }
+  .craft-sheet { padding: 0 10px 24px; }
+  .craft-sheet > main {
+    padding-left: 22px !important;
+    padding-right: 22px !important;
+    padding-top: 32px !important;
+    border-radius: 20px;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+}

@@ -232,7 +232,7 @@ export function routeMap(w = 1600, h = 900) {
 
 /**
  * The front of a University of Maryland track singlet, filling the garment's bounding box (the 3D slab cuts
- * the shape): red knit with a fine mesh, MARYLAND across the chest, gold and black hem tape, and the bib.
+ * the shape): red knit, a black V yoke, flag trim on the straps, MARYLAND across the chest, the 12 hip number and the bib.
  */
 export function singletFabric(w = 512, h = 760) {
   const { c, g } = make(w, h);
@@ -258,50 +258,82 @@ export function singletFabric(w = 512, h = 760) {
   for (let y = 0; y < h; y += 5) {
     for (let x = (y / 5) % 2 ? 2 : 0; x < w; x += 5) g.fillRect(x, y, 1.6, 1.6);
   }
-  // white side panels
-  g.fillStyle = 'rgba(255, 255, 255, 0.92)';
-  g.fillRect(0, h * 0.42, w * 0.07, h * 0.58);
-  g.fillRect(w * 0.93, h * 0.42, w * 0.07, h * 0.58);
-  // MARYLAND across the chest, white with a black keyline, gently arched
+  // Laid out from Max's race photo (public/assets/photos/track-race.jpg). The texture spans the garment's bounding
+  // box: the straps sit at u 0.21-0.33 and 0.67-0.79, the neckline bottoms out at v 0.13.
+  const U = (u: number) => u * w, V = (v: number) => v * h;
+  // the black V yoke below the neckline, red mesh inside it
+  g.fillStyle = '#121212';
+  g.beginPath();
+  g.moveTo(U(0.27), 0);
+  g.lineTo(U(0.73), 0);
+  g.lineTo(U(0.5), V(0.31));
+  g.closePath();
+  g.fill();
+  g.fillStyle = '#b3141f';
+  g.beginPath();
+  g.moveTo(U(0.35), 0);
+  g.lineTo(U(0.65), 0);
+  g.lineTo(U(0.5), V(0.24));
+  g.closePath();
+  g.fill();
+  g.save();
+  g.clip();
+  g.fillStyle = 'rgba(40, 0, 6, 0.35)';
+  for (let y = 0; y < V(0.24); y += 4) for (let x = U(0.35); x < U(0.65); x += 4) g.fillRect(x + ((y / 4) % 2) * 2, y, 1.6, 1.6);
+  g.restore();
+  // Maryland flag trim on the straps: black and gold checks on one, red and white crosses on the other
+  const check = (u0: number, a: string, b2: string) => {
+    const s0 = U(0.03);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+      g.fillStyle = (i + j) % 2 ? a : b2;
+      g.fillRect(U(u0) + i * s0, V(0.01) + j * s0, s0, s0);
+    }
+  };
+  check(0.68, '#111', '#e9b62e');
+  check(0.21, '#d01f2c', '#f4f4f4');
+  // MARYLAND straight across the chest, white with a black keyline
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.font = `900 ${h * 0.085}px 'Arial Black', 'Helvetica Neue', Arial, sans-serif`;
-  const word = 'MARYLAND';
-  const span = w * 0.62;
-  for (let i = 0; i < word.length; i++) {
-    const t = i / (word.length - 1) - 0.5;
-    const x = w / 2 + t * span;
-    const y = h * 0.4 + t * t * h * 0.07;
-    g.save();
-    g.translate(x, y);
-    g.rotate(t * 0.35);
-    g.lineWidth = 7;
-    g.strokeStyle = '#111';
-    g.strokeText(word[i], 0, 0);
-    g.fillStyle = '#fff';
-    g.fillText(word[i], 0, 0);
-    g.restore();
-  }
-  // the bib, pinned at four corners
-  const bx = w * 0.3, by = h * 0.55, bw = w * 0.4, bh = h * 0.17;
+  g.font = `900 ${h * 0.082}px 'Arial Black', 'Helvetica Neue', Arial, sans-serif`;
+  g.lineJoin = 'round';
+  g.lineWidth = 7;
+  g.strokeStyle = '#111';
+  g.strokeText('MARYLAND', w / 2, V(0.4));
+  g.fillStyle = '#fff';
+  g.fillText('MARYLAND', w / 2, V(0.4));
+  // the white hip number pinned over the end of the word
+  const hx = U(0.62), hy = V(0.345), hw = U(0.2), hh = V(0.105);
+  g.fillStyle = '#fbfbf8';
+  g.strokeStyle = '#1a1a1a';
+  g.lineWidth = 3;
+  g.beginPath();
+  g.roundRect(hx, hy, hw, hh, 8);
+  g.fill();
+  g.stroke();
+  g.fillStyle = '#111';
+  g.font = `900 ${hh * 0.72}px 'Arial Black', Arial, sans-serif`;
+  g.fillText('12', hx + hw / 2, hy + hh * 0.55);
+  // the bib, with the meet's red header strip, pinned at four corners
+  const bx = U(0.26), by = V(0.52), bw = U(0.44), bh = V(0.17);
   g.fillStyle = '#f7f5ef';
   g.fillRect(bx, by, bw, bh);
   g.fillStyle = '#c8202b';
-  g.fillRect(bx, by, bw, bh * 0.16);
+  g.fillRect(bx, by, bw, bh * 0.2);
+  g.fillStyle = '#fff';
+  g.font = `800 ${bh * 0.12}px 'Arial Black', Arial, sans-serif`;
+  g.fillText('KEHOE TWILIGHT MEET', w / 2, by + bh * 0.105);
   g.fillStyle = '#111';
-  g.font = `900 ${bh * 0.62}px 'Arial Black', Arial, sans-serif`;
-  g.fillText('118', w / 2, by + bh * 0.6);
+  g.font = `900 ${bh * 0.58}px 'Arial Black', Arial, sans-serif`;
+  g.fillText('118', w / 2, by + bh * 0.62);
   g.fillStyle = '#b9b9b9';
   for (const [px, py] of [[bx + 8, by + 8], [bx + bw - 8, by + 8], [bx + 8, by + bh - 8], [bx + bw - 8, by + bh - 8]]) {
     g.beginPath();
     g.arc(px, py, 4, 0, Math.PI * 2);
     g.fill();
   }
-  // hem tape: gold over black
-  g.fillStyle = '#e9b62e';
-  g.fillRect(0, h * 0.9, w, h * 0.035);
-  g.fillStyle = '#111';
-  g.fillRect(0, h * 0.935, w, h * 0.03);
+  // a thin white binding at the hem
+  g.fillStyle = '#f2f2f2';
+  g.fillRect(0, V(0.965), w, V(0.02));
   // binding round the neck and armholes reads as a darker edge, which the slab's bevel picks up
   return c;
 }

@@ -297,7 +297,7 @@ const Ask: React.FC<Props> = ({
           e.preventDefault();
           onNavigate('home');
         }}
-        className="h-ink"
+        className="h-ink craft-hide"
         style={serif(15)}
       >
         ← back
@@ -318,6 +318,7 @@ const Ask: React.FC<Props> = ({
     </div>
 
     <h1
+      className="craft-dup"
       style={{
         fontSize: 44,
         fontWeight: 900,

@@ -65,6 +65,7 @@ const BuildRow: React.FC<{ build: Build; onNavigate: (route: Route) => void }> =
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
         <span
+          className="craft-display"
           style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}
         >
           {build.title}
@@ -166,7 +167,7 @@ const Builds: React.FC<Props> = ({ onNavigate, filter, onFilterChange }) => {
       >
         ← back
       </a>
-      <h1 style={pageTitle}>Builds</h1>
+      <h1 className="craft-dup" style={pageTitle}>Builds</h1>
       <p style={{ ...pageIntro, maxWidth: 680 }}>
         Everything I’ve made that survived long enough to have a name, with the actual artifacts —
         screenshots, metrics, slides. Startup infrastructure sits next to hackathon one-offs on

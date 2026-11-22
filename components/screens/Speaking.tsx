@@ -21,7 +21,7 @@ const Speaking: React.FC<Props> = ({ onNavigate }) => (
     >
       ← back to Life
     </a>
-    <h1 style={pageTitle}>Speaking</h1>
+    <h1 className="craft-dup" style={pageTitle}>Speaking</h1>
     <p style={{ ...pageIntro, maxWidth: 700 }}>
       I give the talk I’d want to sit through: one hard technical decision, the numbers behind it,
       and what broke. Conferences, podcasts, campus sessions and workshops.

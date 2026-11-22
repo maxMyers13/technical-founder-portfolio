@@ -13,7 +13,7 @@ interface Props {
 }
 
 /**
- * A tilted photo frame.
+ * A tilted print taped to the page, with a thick keyline and a hard shadow like the pod's stickers.
  *
  * The frame takes the photo's shape rather than the other way round: no crop,
  * so nobody loses the top of their head, and no letterbox, so a portrait
@@ -29,14 +29,29 @@ const PhotoFrame: React.FC<Props> = ({ src, placeholder, caption, tilt, height }
       display: 'flex',
       flexDirection: 'column',
       gap: 8,
-      background: 'var(--card)',
-      border: '1px solid var(--line)',
-      borderRadius: 4,
+      position: 'relative',
+      background: '#fffaf0',
+      border: '3px solid var(--ink)',
+      borderRadius: 10,
       padding: '10px 10px 12px',
-      boxShadow: 'var(--shadow)',
+      boxShadow: '6px 6px 0 var(--ink)',
       transform: `rotate(${tilt}deg)`,
     }}
   >
+    {/* a strip of masking tape holding the print to the page */}
+    <span
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        top: -12,
+        left: '50%',
+        width: 74,
+        height: 22,
+        transform: `translateX(-50%) rotate(${-tilt * 2 - 3}deg)`,
+        background: 'rgba(240, 222, 170, 0.85)',
+        border: '1px solid rgba(31, 21, 14, 0.25)',
+      }}
+    />
     {src ? (
       <img
         src={src}
@@ -45,7 +60,8 @@ const PhotoFrame: React.FC<Props> = ({ src, placeholder, caption, tilt, height }
         style={{
           width: '100%',
           height: 'auto',
-          borderRadius: 2,
+          borderRadius: 4,
+          border: '2px solid var(--ink)',
           display: 'block',
         }}
       />

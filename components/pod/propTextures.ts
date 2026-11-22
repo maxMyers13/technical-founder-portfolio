@@ -1689,20 +1689,26 @@ export function wingsPatch(w = 256, h = 256) {
   g.closePath();
   g.fill();
   g.stroke();
-  // two wings fanning out from the middle, feathers stacked
-  const R = w * 0.32;
-  const cy = h * 0.5;
+  // two crossed wings: each is rooted low on the opposite side and sweeps up and out across the shield, the blue one
+  // behind pointing left, the white one in front pointing right, with the longest feathers on top
+  const R = w * 0.36;
   const wing = (dir: 1 | -1, fill: string) => {
-    for (let k = 0; k < 5; k++) {
-      const len = R * (0.95 - k * 0.12);
-      const y0 = cy - R * 0.45 + k * R * 0.2;
+    const rx = cx - dir * w * 0.15;
+    const ry = h * 0.6;
+    for (let k = 5; k >= 0; k--) {
+      const ang = (-40 + k * 11) * (Math.PI / 180); // top feather steepest
+      const len = R * (1.12 - k * 0.11);
+      const tx = rx + dir * Math.cos(ang) * len;
+      const ty = ry + Math.sin(ang) * len;
+      const nx = -Math.sin(ang), ny = dir * Math.cos(ang); // normal to the feather
+      const wid = R * 0.22;
       g.fillStyle = fill;
       g.strokeStyle = '#2a2440';
       g.lineWidth = 2.5;
       g.beginPath();
-      g.moveTo(cx, y0);
-      g.quadraticCurveTo(cx + dir * len * 0.6, y0 - R * 0.3, cx + dir * len, y0 - R * 0.06);
-      g.quadraticCurveTo(cx + dir * len * 0.55, y0 + R * 0.08, cx, y0 + R * 0.14);
+      g.moveTo(rx, ry);
+      g.quadraticCurveTo((rx + tx) / 2 - nx * wid, (ry + ty) / 2 - ny * wid, tx, ty);
+      g.quadraticCurveTo((rx + tx) / 2 + nx * wid * 0.5, (ry + ty) / 2 + ny * wid * 0.5, rx, ry);
       g.closePath();
       g.fill();
       g.stroke();

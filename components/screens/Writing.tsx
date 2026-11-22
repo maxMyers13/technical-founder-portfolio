@@ -20,7 +20,7 @@ const Writing: React.FC<Props> = ({ onNavigate }) => (
     >
       ← back
     </a>
-    <h1 style={pageTitle}>Writing</h1>
+    <h1 className="craft-dup" style={pageTitle}>Writing</h1>
     <p style={{ ...pageIntro, maxWidth: 660 }}>
       Two finished things and one large archive. No fake article cards — when a piece isn’t written
       yet, it isn’t listed yet.

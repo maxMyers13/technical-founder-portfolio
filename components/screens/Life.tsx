@@ -148,7 +148,7 @@ const Life: React.FC<Props> = ({ onNavigate }) => (
     >
       ← back
     </a>
-    <h1 style={pageTitle}>Life</h1>
+    <h1 className="craft-dup" style={pageTitle}>Life</h1>
     <p style={{ ...serif(18), marginTop: 18 }}>accumulated memories, roughly chronological</p>
 
     <div

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Footer from './components/Footer';
-import Navbar from './components/Navbar';
+import CraftHeader from './components/craft/CraftHeader';
+import LevelBanner from './components/craft/LevelBanner';
+import './components/craft/craft.css';
 import Ask from './components/screens/Ask';
 import Builds from './components/screens/Builds';
 import Pod from './components/pod/Pod';
@@ -9,9 +11,7 @@ import Lilo from './components/screens/Lilo';
 import Speaking from './components/screens/Speaking';
 import Writing from './components/screens/Writing';
 import { useWm3Chat } from './hooks/useWm3Chat';
-import { BuildFilter, Route, Theme } from './types';
-
-const THEME_KEY = 'wm3-theme';
+import { BuildFilter, Route } from './types';
 
 /**
  * Every screen has a hash, so a page can be linked to, bookmarked, and reached
@@ -39,33 +39,12 @@ function routeFromHash(): Route {
 
 const App: React.FC = () => {
   const [route, setRoute] = useState<Route>(routeFromHash);
-  const [theme, setTheme] = useState<Theme>('system');
   const [filter, setFilter] = useState<BuildFilter>('everything');
   const [askTeaser, setAskTeaser] = useState('');
   const [composer, setComposer] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const chat = useWm3Chat();
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(THEME_KEY);
-      if (stored === 'light' || stored === 'dark') setTheme(stored);
-    } catch {
-      // Theme is a nicety; a locked-down localStorage just means "system".
-    }
-  }, []);
-
-  const changeTheme = useCallback((next: Theme) => {
-    try {
-      localStorage.setItem(THEME_KEY, next);
-    } catch {
-      // Ignore — the theme still applies for this session.
-    }
-    if (next === 'system') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', next);
-    setTheme(next);
-  }, []);
 
   // Back and forward move between screens, not just through scroll positions.
   useEffect(() => {
@@ -123,37 +102,46 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {route !== 'home' && <Navbar onNavigate={navigate} theme={theme} onThemeChange={changeTheme} />}
-
+    <div
+      className={route === 'home' ? undefined : 'craft'}
+      style={route === 'home' ? { minHeight: '100vh', background: 'var(--bg)' } : undefined}
+    >
       {/* Home is the pod: a full-bleed room with its own header, console and footer. */}
       {route === 'home' && <Pod onNavigate={navigate} onAsk={askFromAnywhere} />}
-      {route === 'writing' && <Writing onNavigate={navigate} />}
-      {route === 'builds' && (
-        <Builds onNavigate={navigate} filter={filter} onFilterChange={setFilter} />
+
+      {/* Every other page wears the pod's materials: its header, a diorama with the page's sign, a stitched sheet. */}
+      {route !== 'home' && <CraftHeader route={route} onNavigate={navigate} />}
+      {route !== 'home' && <LevelBanner route={route} compact={route === 'ask'} />}
+      {route !== 'home' && (
+        <div className="craft-sheet">
+          {route === 'writing' && <Writing onNavigate={navigate} />}
+          {route === 'builds' && (
+            <Builds onNavigate={navigate} filter={filter} onFilterChange={setFilter} />
+          )}
+          {route === 'ask' && (
+            <Ask
+              messages={chat.messages}
+              streaming={chat.streaming}
+              nano={chat.nano}
+              preference={chat.preference}
+              onPreferenceChange={chat.setPreference}
+              composer={composer}
+              expanded={expanded}
+              onToggleSource={toggleSource}
+              onComposerChange={setComposer}
+              onAsk={(q) => chat.ask(q)}
+              onSend={sendComposer}
+              onStop={chat.stop}
+              onClear={clearConversation}
+              onRetry={chat.retry}
+              onNavigate={navigate}
+            />
+          )}
+          {route === 'life' && <Life onNavigate={navigate} />}
+          {route === 'lilo' && <Lilo onNavigate={navigate} />}
+          {route === 'speaking' && <Speaking onNavigate={navigate} />}
+        </div>
       )}
-      {route === 'ask' && (
-        <Ask
-          messages={chat.messages}
-          streaming={chat.streaming}
-          nano={chat.nano}
-          preference={chat.preference}
-          onPreferenceChange={chat.setPreference}
-          composer={composer}
-          expanded={expanded}
-          onToggleSource={toggleSource}
-          onComposerChange={setComposer}
-          onAsk={(q) => chat.ask(q)}
-          onSend={sendComposer}
-          onStop={chat.stop}
-          onClear={clearConversation}
-          onRetry={chat.retry}
-          onNavigate={navigate}
-        />
-      )}
-      {route === 'life' && <Life onNavigate={navigate} />}
-      {route === 'lilo' && <Lilo onNavigate={navigate} />}
-      {route === 'speaking' && <Speaking onNavigate={navigate} />}
 
       {route !== 'home' && <Footer onNavigate={navigate} onNavigateToName={navigateToName} />}
     </div>
