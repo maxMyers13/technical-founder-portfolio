@@ -60,6 +60,9 @@ type Draw = {
   follow: WorldId | Place | null;
   /** Jelly: this part belongs to a soft body centred here. It squashes, stretches and rocks about that point. */
   jelly?: readonly [number, number, number];
+  /** Soul light: drawn in the additive glow pass (kind 11), never in the shadow map. `sway` moves ribbon tips. */
+  wisp?: boolean;
+  sway?: number;
   wrap: number;
   disc: number;
   tex: WebGLTexture | null;
@@ -94,6 +97,8 @@ uniform mat4 uView;
 uniform mat4 uModel;
 uniform mat3 uNormal;
 uniform mat4 uLightVP;
+uniform float uTime;
+uniform float uSway;
 out vec3 vWorld;
 out vec3 vNrm;
 out vec2 vUv;
@@ -103,6 +108,11 @@ out vec4 vLight;
 out float vViewZ;
 void main() {
   vec4 world = uModel * vec4(aPos, 1.0);
+  if (uSway > 0.0) {
+    float tip = aUv.x * aUv.x;
+    world.x += sin(uTime * 1.7 + aUv.x * 5.0 + world.y * 9.0) * uSway * tip;
+    world.z += cos(uTime * 1.3 + aUv.x * 4.0) * uSway * 0.6 * tip;
+  }
   vec4 view = uView * world;
   vWorld = world.xyz;
   vNrm = uNormal * aNrm;
@@ -149,6 +159,7 @@ uniform float uNrmScale;
 uniform float uHasMR;
 uniform float uAlphaCut;
 uniform float uScreen;
+uniform float uTime;
 uniform sampler2D uNrmMap;
 uniform sampler2D uMRMap;
 layout(location=0) out vec4 oColor;
@@ -198,6 +209,30 @@ float fbm(vec2 p) {
 }
 
 void main() {
+  // Kind 11: soul light, drawn in its own additive pass after the solid scene. Ribbons (uWrap 0) are wisps: soft across
+  // their width, fading in at the root and out at the tip, with flowing noise that streams toward the tip. The shell
+  // (uWrap 1) is a translucent aura: bright at the rim, nearly clear face-on. Output is light, so bloom makes it glow.
+  if (uKind > 10.5) {
+    vec3 Vw = normalize(uCam - vWorld);
+    float a;
+    if (uWrap > 0.5) {
+      float rim = pow(1.0 - abs(dot(normalize(vNrm), Vw)), 2.2);
+      float swirl = fbm(vWorld.xy * 14.0 + vec2(uTime * 0.25, -uTime * 0.6));
+      a = rim * (0.45 + 0.75 * swirl) + 0.05 * swirl;
+    } else {
+      float across = 1.0 - abs(vUv.y * 2.0 - 1.0);
+      float soft = smoothstep(0.0, 0.85, across);
+      float n = fbm(vec2(vUv.x * 3.2 - uTime * 0.85, vUv.y * 2.4 + uTime * 0.15) + vWorld.xz * 3.0);
+      float tendril = smoothstep(0.3, 0.78, n);
+      float fade = smoothstep(0.0, 0.14, vUv.x) * (1.0 - smoothstep(0.45, 1.0, vUv.x));
+      a = soft * fade * (0.25 + 0.95 * tendril);
+    }
+    // blue light that only turns white where the wisps are densest
+    vec3 core = mix(uTint, vec3(0.85, 0.97, 1.0), clamp(a * a * 0.55, 0.0, 1.0));
+    oColor = vec4(core * a * uEmissive * (uWrap > 0.5 ? 0.3 : 0.4), 1.0);
+    oDepth = vec4(0.0);
+    return;
+  }
   if (uDisc > 0.5 && length(vUv - 0.5) > 0.5) discard;
   vec3 n = normalize(vNrm);
   vec3 albedo = uTint;
@@ -887,6 +922,41 @@ function curvedPanel(R: number, arc: number, h: number, off = 0, depth = 0, segs
     for (const [t, s] of [[tA, -1], [-tA, 1]]) {
       const back = off - depth;
       b.face([P(t, -h / 2, off), P(t, -h / 2, back), P(t, h / 2, back), P(t, h / 2, off)], [s * Math.cos(t), 0, s * Math.sin(t)], UV, 1, 1);
+    }
+  }
+  return b.finish();
+}
+
+/**
+ * A tapering ribbon along a quadratic curve p0 -> p1 -> p2, as two crossed strips (one facing +z, one turned 90 degrees
+ * about the curve) so it reads as a soft volume from any angle. uv.x runs 0 at the root to 1 at the tip, uv.y across.
+ */
+function ribbonMesh(p0: number[], p1: number[], p2: number[], w0: number, segs = 28): CpuMesh {
+  const b = new Builder();
+  const at = (t: number) => [0, 1, 2].map((i) => (1 - t) * (1 - t) * p0[i] + 2 * t * (1 - t) * p1[i] + t * t * p2[i]);
+  const nrm3 = (v: number[]) => {
+    const l = Math.hypot(v[0], v[1], v[2]) || 1;
+    return v.map((x) => x / l);
+  };
+  for (const turn of [0, 1]) {
+    const rows: number[][] = [];
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const c = at(t);
+      const d = nrm3(at(Math.min(1, t + 0.01)).map((x, k) => x - at(Math.max(0, t - 0.01))[k]));
+      let side = nrm3([d[1], -d[0], 0]); // in the xy plane, square to the curve
+      if (turn) side = nrm3([d[1] * side[2] - d[2] * side[1], d[2] * side[0] - d[0] * side[2], d[0] * side[1] - d[1] * side[0]]);
+      // swells just past the root, then thins to a point
+      const w = w0 * Math.pow(1 - t, 0.75) * (0.75 + 0.5 * Math.sin(Math.min(1, t * 2.2) * Math.PI * 0.5));
+      const n = turn ? side : [0, 0, 1];
+      rows.push([
+        b.vert([c[0] - side[0] * w * 0.5, c[1] - side[1] * w * 0.5, c[2] - side[2] * w * 0.5], n, [t, 0], 1, 0),
+        b.vert([c[0] + side[0] * w * 0.5, c[1] + side[1] * w * 0.5, c[2] + side[2] * w * 0.5], n, [t, 1], 1, 0),
+      ]);
+    }
+    for (let i = 0; i < segs; i++) {
+      b.tri(rows[i][0], rows[i + 1][0], rows[i + 1][1]);
+      b.tri(rows[i][0], rows[i + 1][1], rows[i][1]);
     }
   }
   return b.finish();
@@ -2359,24 +2429,25 @@ export function startPodRoom(
         D(box, 2, [0.07, 0.08, 0.1], headTop[0] + axis[0] * 0.002, headTop[1] + axis[1] * 0.002, headTop[2] + axis[2] * 0.002, 0.18 * K, 0.006 * K, 0.026 * K, { ...facing(u, axis, v), rough: 0.8, ...live }),
       );
     }
-    // wisps streaming off the crown: three tongues, each a run of overlapping spheres that tapers to a point, so
-    // the outline is one smooth flame instead of separate lumps
-    const tongues: [number, number, number, number, number, number, number][] = [
-      // from (x, y), bending through (x, y), to (x, y), root radius: all in 0.21-orb units
-      [0.05, 0.15, 0.15, 0.31, 0.35, 0.31, 0.068],
-      [0.12, 0.1, 0.25, 0.2, 0.38, 0.16, 0.05],
-      [-0.03, 0.17, 0.0, 0.31, 0.11, 0.38, 0.05],
+    // Soul light, Soul Eater style: translucent wisps streaming off the crown and curling away, and a faint aura
+    // round the orb. They are light, not material (kind 11, the additive glow pass), so they glow, bloom, overlap
+    // softly and flow; their tips sway. Coordinates are in 0.21-orb units, relative to the orb's centre.
+    const GLOW: V3 = [0.22, 0.62, 1.0];
+    const wisps: [number[], number[], number[], number, number][] = [
+      // root, bend, tip (x, y, z), root width, sway
+      [[0.02, 0.17, 0.05], [0.16, 0.44, 0.08], [0.46, 0.5, 0.02], 0.17, 0.03],
+      [[0.1, 0.13, 0.06], [0.32, 0.3, 0.1], [0.56, 0.24, 0.04], 0.12, 0.025],
+      [[-0.05, 0.18, 0.04], [-0.02, 0.46, 0.06], [0.22, 0.66, 0.0], 0.13, 0.035],
+      [[0.16, 0.07, 0.07], [0.38, 0.12, 0.1], [0.6, 0.02, 0.05], 0.09, 0.02],
+      [[-0.12, 0.15, 0.03], [-0.26, 0.38, 0.05], [-0.1, 0.58, 0.0], 0.08, 0.03],
+      [[0.06, 0.2, -0.02], [0.1, 0.36, -0.04], [0.3, 0.42, -0.06], 0.1, 0.02],
     ];
-    for (const [x0, y0, x1, y1, x2, y2, r0] of tongues) {
-      const N = 26;
-      for (let k = 0; k <= N - 2; k++) { // stop just short of the end: the last spheres are too small to overlap
-        const t = k / N;
-        const x = (1 - t) * (1 - t) * x0 + 2 * t * (1 - t) * x1 + t * t * x2;
-        const y = (1 - t) * (1 - t) * y0 + 2 * t * (1 - t) * y1 + t * t * y2;
-        const r = r0 * Math.pow(1 - t, 0.8) * K;
-        soul.push(D(ball, 1, [0.56, 0.84, 1], C[0] + x * K, C[1] + y * K, C[2], r, r, r, { rough: 0.3, wrap: 0.95, ...live }));
-      }
+    for (const [p0, p1, p2, w, sway] of wisps) {
+      const k3 = (p: number[]) => p.map((v) => v * K);
+      const mesh = upload(gl, ribbonMesh(k3(p0), k3(p1), k3(p2), w * K));
+      soul.push(D(mesh, 11, GLOW, C[0], C[1], C[2], 1, 1, 1, { wrap: 0, wisp: true, sway: sway * K, ...live }));
     }
+    soul.push(D(ball, 11, GLOW, C[0], C[1], C[2], R * 1.22, R * 1.22, R * 1.22, { wrap: 1, wisp: true, ...live }));
   }
 
   const draws: Draw[] = [
@@ -2615,6 +2686,8 @@ export function startPodRoom(
     nrmScale: gl.getUniformLocation(beauty, 'uNrmScale'),
     hasMR: gl.getUniformLocation(beauty, 'uHasMR'),
     screen: gl.getUniformLocation(beauty, 'uScreen'),
+    sway: gl.getUniformLocation(beauty, 'uSway'),
+    time: gl.getUniformLocation(beauty, 'uTime'),
     nrmMap: gl.getUniformLocation(beauty, 'uNrmMap'),
     mrMap: gl.getUniformLocation(beauty, 'uMRMap'),
   };
@@ -2686,8 +2759,9 @@ export function startPodRoom(
     return trs(d.x, d.y + bob, d.z + lift, d.rx, d.ry + spin, d.rz, d.sx, d.sy, d.sz);
   };
 
-  const drawScene = (prog: 'beauty' | 'shadow', time: number) => {
+  const drawScene = (prog: 'beauty' | 'shadow' | 'glow', time: number) => {
     for (const d of draws) {
+      if (!!d.wisp !== (prog === 'glow')) continue;
       const model = modelOf(d, time);
       if (prog === 'shadow') {
         gl.uniformMatrix4fv(sModel, false, model);
@@ -2709,6 +2783,7 @@ export function startPodRoom(
         gl.uniform1f(bLoc.nrmScale, d.nrmScale);
         gl.uniform1f(bLoc.hasMR, d.mr ? 1 : 0);
         gl.uniform1f(bLoc.screen, d.screen ? 1 : 0);
+        gl.uniform1f(bLoc.sway, calm ? 0 : d.sway ?? 0);
         if (d.tex) {
           gl.activeTexture(gl.TEXTURE2);
           gl.bindTexture(gl.TEXTURE_2D, d.tex);
@@ -2873,7 +2948,19 @@ export function startPodRoom(
     gl.bindTexture(gl.TEXTURE_2D, shadowTex);
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, portrait);
+    gl.uniform1f(bLoc.time, calm ? 0 : time);
     drawScene('beauty', time);
+    // soul light: added on top of the lit scene, depth-tested but not written, and kept out of the depth/normal
+    // buffer so SSAO and depth of field still see the solid room
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE);
+    gl.depthMask(false);
+    gl.disable(gl.CULL_FACE);
+    gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.NONE]);
+    drawScene('glow', time);
+    gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
 
     // ---------- post ----------
     // Effect strengths. window.__podFx can override any of them while tuning in devtools.
