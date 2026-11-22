@@ -2,54 +2,34 @@ import React from 'react';
 import { STARTER_QUESTIONS } from '../../constants';
 import { NanoStatus } from '../../lib/wm3/nano';
 import { AnswerLane, AssistantMessage, LanePreference, Message, Route, Source } from '../../types';
-import { serif } from '../ui/styles';
-
-const eyebrow: React.CSSProperties = {
-  fontSize: 9.5,
-  fontWeight: 700,
-  letterSpacing: '.16em',
-  textTransform: 'uppercase',
-  color: 'var(--mute)',
-};
 
 /** Says which lane wrote a given answer, so the receipts cover the model too. */
 const LANE_NOTE: Record<AnswerLane, string> = {
-  cloud: 'written by a hosted model, from the sources below',
-  nano: 'written on your device by Gemini Nano, from the sources below',
-  quoted: 'quoted straight from the archive — no model wrote this',
+  cloud: 'Written by a hosted model, from the sources below',
+  nano: 'Written on your device by Gemini Nano, from the sources below',
+  quoted: 'Quoted straight from the archive. No model wrote this',
 };
 
-/** The lane switcher. Ask the same thing twice and watch them differ. */
-const LANE_OPTIONS: { key: LanePreference; label: string }[] = [
-  { key: 'auto', label: 'Auto' },
-  { key: 'cloud', label: 'Cloud' },
-  { key: 'nano', label: 'On-device' },
-  { key: 'quoted', label: 'Quotes' },
+/** The lane switcher. Ask the same thing twice and watch them differ. `says` is what that choice does with a question. */
+const LANE_OPTIONS: { key: LanePreference; label: string; says: string }[] = [
+  { key: 'auto', label: 'Auto', says: 'Tries a hosted model first, then Chrome’s on-device model, then plain quotes.' },
+  { key: 'cloud', label: 'Cloud', says: 'A hosted model writes the answer, so your question is sent to this site’s server.' },
+  { key: 'nano', label: 'On-device', says: 'Chrome’s built-in model writes the answer on your machine. Your question stays in this tab.' },
+  { key: 'quoted', label: 'Quotes', says: 'No model at all: the closest passages from the archive, word for word, matched in this tab.' },
 ];
 
-const lanePill = (active: boolean): React.CSSProperties => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  height: 26,
-  padding: '0 11px',
-  borderRadius: 9999,
-  fontSize: 11.5,
-  ...(active
-    ? { background: 'var(--ink)', color: 'var(--bg)', fontWeight: 600 }
-    : { border: '1px solid var(--hair)', color: 'var(--body)', fontWeight: 500 }),
-});
-
-/** One line about which lane is answering, and how far off the other one is. */
-function laneNote(nano: NanoStatus): string | null {
+/** How far along Chrome's on-device model is, when that matters to the lane in use. */
+function nanoNote(nano: NanoStatus, preference: LanePreference): string | null {
+  if (preference === 'cloud' || preference === 'quoted') return null;
   switch (nano.state) {
     case 'ready':
-      return 'writing answers with Chrome’s on-device model — nothing leaves this page';
+      return preference === 'nano' ? 'On-device model ready.' : null;
     case 'downloading':
-      return `fetching Chrome’s on-device model — ${nano.percent}% · quoting the archive until it lands`;
+      return `Fetching Chrome’s on-device model: ${nano.percent}%.`;
     case 'downloadable':
-      return 'ask something and Chrome’s on-device model starts downloading in the background';
+      return 'Ask something and Chrome’s on-device model starts downloading in the background.';
     default:
-      return null;
+      return preference === 'nano' ? 'This browser has no on-device model, so answers fall back to quotes.' : null;
   }
 }
 
@@ -71,23 +51,10 @@ interface Props {
   onNavigate: (route: Route) => void;
 }
 
-const SourceCard: React.FC<{ source: Source; onNavigate: (route: Route) => void }> = ({
-  source,
-  onNavigate,
-}) => (
-  <div
-    style={{
-      border: '1px solid var(--line)',
-      borderRadius: 10,
-      background: 'var(--bg2)',
-      padding: '16px 18px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 5,
-    }}
-  >
-    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{source.title}</span>
-    <span style={{ fontSize: 12, color: 'var(--mute)' }}>
+const SourceCard: React.FC<{ source: Source; onNavigate: (route: Route) => void }> = ({ source, onNavigate }) => (
+  <div className="ask-source">
+    <b>{source.title}</b>
+    <span>
       {source.date} · {source.path}
     </span>
     <a
@@ -102,18 +69,8 @@ const SourceCard: React.FC<{ source: Source; onNavigate: (route: Route) => void 
             }
           : undefined
       }
-      className="h-underline"
-      style={{
-        fontSize: 13,
-        fontWeight: 600,
-        color: 'var(--ink)',
-        borderBottom: '1px solid var(--hair)',
-        paddingBottom: 1,
-        alignSelf: 'flex-start',
-        marginTop: 4,
-      }}
     >
-      open source →
+      Open source →
     </a>
   </div>
 );
@@ -130,127 +87,52 @@ const AssistantBubble: React.FC<{
   const openSources = message.sources.filter((_, j) => expanded[`${index}-${j}`]);
 
   return (
-    <div
-      data-m="msg"
-      style={{
-        marginTop: 22,
-        display: 'grid',
-        gridTemplateColumns: '34px 1fr',
-        gap: 18,
-        alignItems: 'start',
-      }}
-    >
-      <div
-        style={{
-          width: 30,
-          height: 30,
-          borderRadius: '50%',
-          border: '1px solid var(--ink)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 7.5,
-          fontWeight: 800,
-          letterSpacing: '.1em',
-          color: 'var(--ink)',
-          marginTop: 3,
-        }}
-      >
+    <div data-m="msg" className="ask-a">
+      <span className="ask-a__badge" aria-hidden="true">
         WM3
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+      </span>
+      <div className="ask-a__body">
         {message.pending && !message.error && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 4 }}>
-            <span style={serif(15)}>
-              reading the archive
+          <div className="ask-a__pending">
+            <b>
+              Reading the archive
               <span style={{ animation: 'wm3dot 1.2s ease-in-out 0s infinite' }}>.</span>
               <span style={{ animation: 'wm3dot 1.2s ease-in-out .2s infinite' }}>.</span>
               <span style={{ animation: 'wm3dot 1.2s ease-in-out .4s infinite' }}>.</span>
-            </span>
-            {message.pendingNote && (
-              <span style={{ fontSize: 12, color: 'var(--mute)' }}>{message.pendingNote}</span>
-            )}
+            </b>
+            {message.pendingNote && <span>{message.pendingNote}</span>}
           </div>
         )}
 
         {message.text.length > 0 && !message.error && (
-          <p
-            style={{
-              fontSize: 16.5,
-              lineHeight: 1.75,
-              color: 'var(--ink)',
-              whiteSpace: 'pre-wrap',
-              textWrap: 'pretty',
-            }}
-          >
-            {message.text + (message.streaming && !message.pending ? ' ▍' : '')}
-          </p>
+          <p className="ask-a__text">{message.text + (message.streaming && !message.pending ? ' ▍' : '')}</p>
         )}
 
         {message.error && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              border: '1px solid var(--line)',
-              borderRadius: 10,
-              background: 'var(--bg2)',
-              padding: '16px 18px',
-            }}
-          >
-            <span style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--body)' }}>
-              WM3 couldn’t reach the archive just now. Nothing was made up in the meantime.
-            </span>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                onRetry();
-              }}
-              className="h-underline"
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: 'var(--ink)',
-                borderBottom: '1px solid var(--hair)',
-                paddingBottom: 1,
-                alignSelf: 'flex-start',
-              }}
-            >
+          <div className="ask-a__error">
+            <span>WM3 couldn’t reach the archive just now. Nothing was made up in the meantime.</span>
+            <button type="button" className="ask-link" onClick={onRetry}>
               Try again
-            </a>
+            </button>
           </div>
         )}
 
-        {settled && message.lane && (
-          <span style={serif(13)}>{LANE_NOTE[message.lane]}</span>
-        )}
+        {settled && message.lane && <span className="ask-a__lane">{LANE_NOTE[message.lane]}</span>}
 
         {settled && message.sources.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-              <span style={{ ...eyebrow, marginRight: 2 }}>sources</span>
+          <div className="ask-sources">
+            <div className="ask-sources__row">
+              <span className="ask-label">Sources</span>
               {message.sources.map((source, j) => (
-                <a
+                <button
                   key={source.title}
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onToggleSource(`${index}-${j}`);
-                  }}
-                  className="h-source"
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: 'var(--body)',
-                    border: '1px solid var(--hair)',
-                    borderRadius: 9999,
-                    padding: '6px 13px',
-                  }}
+                  type="button"
+                  className="ask-chip"
+                  aria-expanded={!!expanded[`${index}-${j}`]}
+                  onClick={() => onToggleSource(`${index}-${j}`)}
                 >
                   {source.title} · {source.date}
-                </a>
+                </button>
               ))}
             </div>
             {openSources.map((source) => (
@@ -279,183 +161,18 @@ const Ask: React.FC<Props> = ({
   onClear,
   onRetry,
   onNavigate,
-}) => (
-  <main
-    style={{
-      maxWidth: 760,
-      margin: '0 auto',
-      padding: '64px 24px 0',
-      minHeight: 'calc(100vh - 71px)',
-      display: 'flex',
-      flexDirection: 'column',
-    }}
-  >
-    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 20 }}>
-      <a
-        href="#"
-        onClick={(e) => {
-          e.preventDefault();
-          onNavigate('home');
-        }}
-        className="h-ink craft-hide"
-        style={serif(15)}
-      >
-        ← back
-      </a>
-      {messages.length > 0 && (
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            onClear();
-          }}
-          className="h-clear"
-          style={{ ...serif(14), borderBottom: '1px solid transparent' }}
-        >
-          clear conversation
-        </a>
-      )}
-    </div>
+}) => {
+  const empty = messages.length === 0;
+  const lane = LANE_OPTIONS.find((o) => o.key === preference) ?? LANE_OPTIONS[0];
+  const note = nanoNote(nano, preference);
 
-    <h1
-      className="craft-dup"
-      style={{
-        fontSize: 44,
-        fontWeight: 900,
-        letterSpacing: '-.045em',
-        lineHeight: 1,
-        color: 'var(--ink)',
-        marginTop: 36,
-      }}
-    >
-      Ask WM3
-    </h1>
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        marginTop: 20,
-        flexWrap: 'wrap',
-      }}
-    >
-      <span style={{ ...eyebrow, marginRight: 2 }}>lane</span>
-      {LANE_OPTIONS.map((option) => (
-        <a
-          key={option.key}
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            onPreferenceChange(option.key);
-          }}
-          style={lanePill(option.key === preference)}
-        >
-          {option.label}
-        </a>
-      ))}
-    </div>
-
-    <p
-      style={{
-        fontSize: 15.5,
-        lineHeight: 1.65,
-        color: 'var(--mute)',
-        marginTop: 14,
-        maxWidth: 560,
-        textWrap: 'pretty',
-      }}
-    >
-      WM3 answers from my public archive — the builds, talks and posts on this site. It’s an
-      interface to the archive, not a digital me, and it says so when something isn’t in there.
-    </p>
-
-    {messages.length === 0 && (
-      // paddingBottom clears the sticky composer, which overlays the end of the
-      // page rather than pushing it down.
-      <div
-        style={{
-          marginTop: 52,
-          paddingBottom: 132,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-        }}
-      >
-        <span style={{ ...eyebrow, fontSize: 10, marginBottom: 14 }}>try one of these</span>
-        {STARTER_QUESTIONS.map((q) => (
-          <a
-            key={q}
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              onAsk(q);
-            }}
-            className="h-starter"
-            style={{
-              ...serif(19, 'var(--body)'),
-              padding: '11px 0',
-              borderBottom: '1px solid var(--line)',
-            }}
-          >
-            {q}
-          </a>
-        ))}
-        <span style={{ ...serif(13.5), marginTop: 22, maxWidth: 520 }}>
-          runs entirely in your browser — your question is embedded on your machine and matched
-          against 213 of Max’s posts plus the pages of this site. Nothing is sent anywhere, and when
-          the archive has no answer it says so instead of guessing.
-        </span>
-      </div>
-    )}
-
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {messages.map((message, i) =>
-        message.role === 'user' ? (
-          <div
-            key={i}
-            style={{ marginTop: 44, paddingTop: 26, borderTop: '1px solid var(--line)' }}
-          >
-            <span style={serif(17.5)}>“{message.text}”</span>
-          </div>
-        ) : (
-          <AssistantBubble
-            key={i}
-            message={message}
-            index={i}
-            expanded={expanded}
-            onToggleSource={onToggleSource}
-            onRetry={onRetry}
-            onNavigate={onNavigate}
-          />
-        ),
-      )}
-    </div>
-
-    <div style={{ flex: 1 }} />
-
-    <div
-      style={{
-        position: 'sticky',
-        bottom: 0,
-        marginTop: 44,
-        padding: '24px 0 26px',
-        background: 'linear-gradient(to top, var(--bg) 76%, transparent)',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: 10,
-          border: '1px solid var(--hair)',
-          borderRadius: 14,
-          background: 'var(--card)',
-          padding: '11px 11px 11px 18px',
-        }}
-      >
+  const box = (
+    <div className={`ask-box${empty ? '' : ' ask-box--dock'}`}>
+      <div className="ask-box__field">
         <textarea
-          rows={1}
+          rows={empty ? 2 : 1}
           value={composer}
+          aria-label="Your question"
           onChange={(e) => onComposerChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -463,81 +180,101 @@ const Ask: React.FC<Props> = ({
               onSend();
             }
           }}
-          placeholder="Ask the archive…"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            border: 'none',
-            outline: 'none',
-            background: 'transparent',
-            resize: 'none',
-            fontFamily: "'Poppins', system-ui, sans-serif",
-            fontSize: 15.5,
-            lineHeight: 1.55,
-            color: 'var(--ink)',
-            maxHeight: 170,
-            overflow: 'auto',
-            padding: '6px 0',
-          }}
+          placeholder="Ask about LILO, a talk, a post, the track years…"
         />
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            onSend();
-          }}
-          title="Send"
-          className="h-btn-solid"
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 10,
-            background: 'var(--ink)',
-            color: 'var(--bg)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 17,
-            fontWeight: 700,
-            flex: 'none',
-          }}
-        >
-          ↑
-        </a>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginTop: 9,
-          padding: '0 4px',
-        }}
-      >
-        <span style={{ fontSize: 11, color: 'var(--mute)' }}>
-          {laneNote(nano) ?? 'Enter sends · Shift+Enter for a new line'}
-        </span>
-        {streaming && (
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              onStop();
-            }}
-            className="h-stop"
-            style={{
-              fontSize: 11.5,
-              fontWeight: 600,
-              color: 'var(--mute)',
-              borderBottom: '1px solid var(--hair)',
-            }}
-          >
-            stop
-          </a>
+        {streaming ? (
+          <button type="button" className="craft-btn ask-send ask-send--stop" onClick={onStop}>
+            Stop
+          </button>
+        ) : (
+          <button type="button" className="craft-btn ask-send" onClick={onSend} aria-label="Send">
+            Ask
+          </button>
         )}
       </div>
+      <div className="ask-lanes">
+        <span className="ask-label" id="ask-lane-label">
+          Answer with
+        </span>
+        <div className="ask-seg" role="group" aria-labelledby="ask-lane-label">
+          {LANE_OPTIONS.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              aria-pressed={option.key === preference}
+              onClick={() => onPreferenceChange(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <p className="ask-lanes__says">
+          {lane.says}
+          {note ? ` ${note}` : ''}
+        </p>
+      </div>
     </div>
-  </main>
-);
+  );
+
+  return (
+    <main className="ask">
+      <h1 className="craft-dup">Ask WM3</h1>
+
+      <div className="ask-top">
+        <p className="ask-lede">
+          Ask anything about my work. Answers come from my public archive, <b>213 posts plus the pages of this site</b>,
+          with the sources shown. If it isn’t in there, WM3 says so.
+        </p>
+        {!empty && (
+          <button type="button" className="ask-link" onClick={onClear}>
+            Clear conversation
+          </button>
+        )}
+      </div>
+
+      {empty && box}
+
+      {empty && (
+        <section className="ask-starters" aria-label="Try one of these">
+          <p className="ask-label">Or start with one of these</p>
+          <ul>
+            {STARTER_QUESTIONS.map((q) => (
+              <li key={q}>
+                <button type="button" onClick={() => onAsk(q)}>
+                  <span aria-hidden="true">?</span>
+                  {q}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {!empty && (
+        <div className="ask-thread">
+          {messages.map((message, i) =>
+            message.role === 'user' ? (
+              <p key={i} className="ask-q">
+                {message.text}
+              </p>
+            ) : (
+              <AssistantBubble
+                key={i}
+                message={message}
+                index={i}
+                expanded={expanded}
+                onToggleSource={onToggleSource}
+                onRetry={onRetry}
+                onNavigate={onNavigate}
+              />
+            ),
+          )}
+        </div>
+      )}
+
+      {!empty && box}
+    </main>
+  );
+};
 
 export default Ask;
