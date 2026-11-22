@@ -314,34 +314,6 @@
   transform: rotate(5deg);
 }
 .pod-life__tag { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); }
-.pod-chair {
-  position: absolute;
-  left: 30%;
-  bottom: 4%;
-  width: 30%;
-  height: 20%;
-}
-.pod-chair::before {
-  content: '';
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 0;
-  height: 62%;
-  background: #7c8c3e radial-gradient(#4f5a24 2px, transparent 3px) 0 0 / 14px 14px;
-  border: 3px solid #4f5a24;
-  border-radius: 14px 14px 4px 4px;
-}
-.pod-chair::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 54%;
-  height: 46%;
-  background: linear-gradient(#8c6a48 0 45%, transparent 45%), linear-gradient(90deg, #6b4e1e 0 8%, transparent 8% 92%, #6b4e1e 92%);
-  border-radius: 6px;
-}
 
 /* Right wing: a stage photo for Speaking and a shelf for Writing. */
 .pod-speak {
@@ -975,4 +947,432 @@
   .pod-plant { display: none; }
   .pod-header .pod-navbtn--dashed { min-height: 40px; font-size: 13px; }
   .pod-footer { padding: 4px 16px 18px; }
+}
+
+/* ---------- Full-screen room (WebGL running, wider than a phone) ----------
+   The rendered room fills the window edge to edge; the header and footer float over it on soft gradients
+   so the room is never boxed in. The flat CSS fallback and the phone layout keep the framed version. */
+@media (min-width: 761px) {
+  .pod:has(.pod-scene--gl) .pod-stage { padding: 0; }
+  .pod:has(.pod-scene--gl) .pod-scene {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100svh;
+    min-width: 0;
+    aspect-ratio: auto;
+    border-radius: 0;
+    z-index: 0;
+  }
+  .pod:has(.pod-scene--gl) .pod-header,
+  .pod:has(.pod-scene--gl) .pod-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 20;
+  }
+  .pod:has(.pod-scene--gl) .pod-header {
+    top: 0;
+    background: linear-gradient(rgba(20, 14, 10, 0.82), rgba(20, 14, 10, 0));
+    padding-bottom: 28px;
+  }
+  .pod:has(.pod-scene--gl) .pod-footer {
+    bottom: 0;
+    padding-top: 28px;
+    background: linear-gradient(rgba(20, 14, 10, 0), rgba(20, 14, 10, 0.82));
+    pointer-events: none;
+  }
+  .pod:has(.pod-scene--gl) .pod-footer a { pointer-events: auto; }
+  .pod:has(.pod-scene--gl) .pod-navbtn { background: rgba(20, 14, 10, 0.45); backdrop-filter: blur(6px); }
+  .pod:has(.pod-scene--gl) .pod-navbtn[aria-pressed='true'] { background: var(--cream); color: var(--night); }
+}
+@media (min-width: 761px) {
+  .pod:has(.pod-scene--gl) .pod-welcome { top: calc(var(--header-h) + 6px); }
+}
+
+/* Hover card for a book or game in the WebGL room. */
+.pod-booktip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 240px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  font: 700 13px/1.25 'Nunito', system-ui, sans-serif;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.pod-booktip strong { font: 400 17px/1.1 'Bagel Fat One', 'Nunito', sans-serif; }
+.pod-booktip--on { opacity: 1; }
+
+/* ---------- The controller: the pod's navigation, a glossy PS3-style pad ----------
+   Real buttons: the d-pad's four arms and the four face buttons each open a section, and every button carries its
+   label so nobody needs to know the game. Sized in --u (1/640 of the pad) so it scales with the room.
+   Phones keep the plain button grid (.pod-console). */
+.pod-pad {
+  --u: min(1px, 0.075cqw);
+  position: absolute;
+  left: 50%;
+  bottom: 1.2%;
+  transform: translateX(-50%);
+  z-index: 6;
+  width: calc(var(--u) * 640);
+  height: calc(var(--u) * 230);
+  font-size: calc(var(--u) * 15);
+}
+.pod-console { display: none; }
+@media (max-width: 760px) {
+  .pod-pad { display: none; }
+  .pod-console { display: block; }
+}
+.pod-pad__body {
+  position: absolute;
+  inset: 0 calc(var(--u) * 40) calc(var(--u) * 50);
+  border-radius: calc(var(--u) * 90) calc(var(--u) * 90) calc(var(--u) * 60) calc(var(--u) * 60);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(#2b2b30, #0c0c0e 70%);
+  border: calc(var(--u) * 3) solid #050506;
+  box-shadow: 0 calc(var(--u) * 10) calc(var(--u) * 24) rgba(0, 0, 0, 0.55);
+}
+.pod-pad__grip {
+  position: absolute;
+  top: calc(var(--u) * 70);
+  width: calc(var(--u) * 170);
+  height: calc(var(--u) * 175);
+  background: linear-gradient(#1c1c20, #060607);
+  border: calc(var(--u) * 3) solid #050506;
+  border-radius: 45% 45% 50% 50% / 30% 30% 70% 70%;
+  z-index: -1;
+}
+.pod-pad__grip--l { left: calc(var(--u) * -34); transform: rotate(14deg); }
+.pod-pad__grip--r { right: calc(var(--u) * -34); transform: rotate(-14deg); }
+.pod-pad ul { list-style: none; margin: 0; padding: 0; }
+.pod-pad__slot { position: absolute; }
+.pod-pad__label {
+  position: absolute;
+  white-space: nowrap;
+  padding: calc(var(--u) * 3) calc(var(--u) * 9);
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--ink);
+  border: calc(var(--u) * 2) solid var(--ink);
+  font: 800 1em/1.15 'Nunito', system-ui, sans-serif;
+  pointer-events: none;
+}
+/* d-pad: a cross of four arms around a recessed hub */
+.pod-pad__dpad::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--u) * 52);
+  top: calc(var(--u) * 26);
+  width: calc(var(--u) * 140);
+  height: calc(var(--u) * 140);
+  border-radius: 50%;
+  background: radial-gradient(#141417, #08080a);
+  box-shadow: inset 0 calc(var(--u) * 4) calc(var(--u) * 10) rgba(0, 0, 0, 0.8);
+}
+.pod-pad__slot--up { left: calc(var(--u) * 100); top: calc(var(--u) * 30); }
+.pod-pad__slot--down { left: calc(var(--u) * 100); top: calc(var(--u) * 118); }
+.pod-pad__slot--left { left: calc(var(--u) * 56); top: calc(var(--u) * 74); }
+.pod-pad__slot--right { left: calc(var(--u) * 144); top: calc(var(--u) * 74); }
+.pod-pad__arm,
+.pod-pad__btn {
+  position: relative;
+  display: block;
+  width: calc(var(--u) * 46);
+  height: calc(var(--u) * 46);
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: calc(var(--u) * 2) solid #050506;
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.08s, filter 0.12s;
+}
+.pod-pad__arm {
+  border-radius: calc(var(--u) * 8);
+  background: linear-gradient(#3a3a40, #1d1d21);
+  box-shadow: 0 calc(var(--u) * 4) 0 #050506;
+}
+.pod-pad__arm::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 0;
+  height: 0;
+  border: calc(var(--u) * 8) solid transparent;
+}
+.pod-pad__arm--up::after { border-bottom-color: #8c8c94; transform: translateY(calc(var(--u) * -4)); }
+.pod-pad__arm--down::after { border-top-color: #8c8c94; transform: translateY(calc(var(--u) * 4)); }
+.pod-pad__arm--left::after { border-right-color: #8c8c94; transform: translateX(calc(var(--u) * -4)); }
+.pod-pad__arm--right::after { border-left-color: #8c8c94; transform: translateX(calc(var(--u) * 4)); }
+.pod-pad__arm--up .pod-pad__label { bottom: calc(100% + var(--u) * 6); left: 50%; transform: translateX(-50%); }
+.pod-pad__arm--down .pod-pad__label { top: calc(100% + var(--u) * 8); left: 50%; transform: translateX(-50%); }
+.pod-pad__arm--left .pod-pad__label { right: calc(100% + var(--u) * 6); top: 50%; transform: translateY(-50%); }
+.pod-pad__arm--right .pod-pad__label { left: calc(100% + var(--u) * 6); top: 50%; transform: translateY(-50%); }
+/* face buttons: four glossy rounds with coloured glyphs */
+.pod-pad__slot--triangle { left: calc(var(--u) * 420); top: calc(var(--u) * 26); }
+.pod-pad__slot--cross { left: calc(var(--u) * 420); top: calc(var(--u) * 122); }
+.pod-pad__slot--square { left: calc(var(--u) * 372); top: calc(var(--u) * 74); }
+.pod-pad__slot--circle { left: calc(var(--u) * 468); top: calc(var(--u) * 74); }
+.pod-pad__btn {
+  border-radius: 50%;
+  background: radial-gradient(60% 50% at 40% 30%, #4a4a52, #141417 70%);
+  box-shadow: 0 calc(var(--u) * 4) 0 #050506, inset 0 calc(var(--u) * 2) 0 rgba(255, 255, 255, 0.15);
+}
+.pod-pad__glyph { position: absolute; inset: 0; margin: auto; width: 46%; height: 46%; background: center / contain no-repeat; }
+.pod-pad__btn--triangle .pod-pad__glyph { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 22 20H2z' fill='none' stroke='%2340d39a' stroke-width='2.6' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.pod-pad__btn--circle .pod-pad__glyph { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='%23ff5c63' stroke-width='2.6'/%3E%3C/svg%3E"); }
+.pod-pad__btn--cross .pod-pad__glyph { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 4 20 20M20 4 4 20' stroke='%2378acff' stroke-width='2.8' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.pod-pad__btn--square .pod-pad__glyph { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='4' width='16' height='16' fill='none' stroke='%23f08ad6' stroke-width='2.6'/%3E%3C/svg%3E"); }
+.pod-pad__btn--triangle .pod-pad__label { bottom: calc(100% + var(--u) * 6); left: 50%; transform: translateX(-50%); }
+.pod-pad__btn--cross .pod-pad__label { top: calc(100% + var(--u) * 8); left: 50%; transform: translateX(-50%); }
+.pod-pad__btn--square .pod-pad__label { right: calc(100% + var(--u) * 6); top: 50%; transform: translateY(-50%); }
+.pod-pad__btn--circle .pod-pad__label { left: calc(100% + var(--u) * 6); top: 50%; transform: translateY(-50%); }
+.pod-pad__arm:hover,
+.pod-pad__btn:hover { filter: brightness(1.35); }
+.pod-pad__arm:active,
+.pod-pad__btn:active { transform: translateY(calc(var(--u) * 3)); box-shadow: 0 calc(var(--u) * 1) 0 #050506; }
+.pod-pad__arm:focus-visible,
+.pod-pad__btn:focus-visible { outline: 3px solid #ffe9a8; outline-offset: 3px; }
+/* the middle: select, the home button, start; and two sticks */
+.pod-pad__mid {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--u) * 22);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 14);
+}
+.pod-pad__pill { width: calc(var(--u) * 34); height: calc(var(--u) * 12); border-radius: 999px; background: #3a3a40; border: calc(var(--u) * 2) solid #050506; }
+.pod-pad__home { width: calc(var(--u) * 30); height: calc(var(--u) * 30); border-radius: 50%; background: radial-gradient(#3d3d44, #18181b); border: calc(var(--u) * 2) solid #050506; }
+.pod-pad__stick {
+  position: absolute;
+  top: calc(var(--u) * 112);
+  width: calc(var(--u) * 58);
+  height: calc(var(--u) * 58);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #2f2f35 0 45%, #121215 46% 60%, #050506 62%);
+  box-shadow: 0 calc(var(--u) * 4) calc(var(--u) * 8) rgba(0, 0, 0, 0.6);
+}
+.pod-pad__stick--l { left: calc(var(--u) * 205); }
+.pod-pad__stick--r { right: calc(var(--u) * 205); }
+.pod-shelflist { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.pod-shelflist li { padding: 8px 12px; border-radius: 10px; background: rgba(140, 106, 72, 0.14); border: 2px solid rgba(31, 21, 14, 0.18); }
+.pod-shelflist__note { display: block; font-size: 14px; opacity: 0.8; }
+
+/* The 3D controller's buttons: invisible round hit areas pinned to each rendered button, with a label beside it.
+   (With WebGL off, the flat CSS controller .pod-pad shows instead.) */
+.pod-scene--gl .pod-pad { display: none; }
+.pod-padhits { list-style: none; margin: 0; padding: 0; }
+.pod-padhit {
+  position: absolute;
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+}
+.pod-padhit:hover { background: radial-gradient(rgba(255, 233, 168, 0.28), rgba(255, 233, 168, 0) 70%); }
+.pod-padhit:focus-visible { outline: 3px solid #ffe9a8; outline-offset: 2px; }
+.pod-padhit__label {
+  position: absolute;
+  white-space: nowrap;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font: 800 13px/1.2 'Nunito', system-ui, sans-serif;
+  pointer-events: none;
+}
+.pod-padhit--up .pod-padhit__label,
+.pod-padhit--triangle .pod-padhit__label { bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); }
+.pod-padhit--down .pod-padhit__label,
+.pod-padhit--cross .pod-padhit__label { top: calc(100% + 2px); left: 50%; transform: translateX(-50%); }
+.pod-padhit--left .pod-padhit__label,
+.pod-padhit--square .pod-padhit__label { right: calc(100% + 2px); top: 50%; transform: translateY(-50%); }
+.pod-padhit--right .pod-padhit__label,
+.pod-padhit--circle .pod-padhit__label { left: calc(100% + 2px); top: 50%; transform: translateY(-50%); }
+
+/* Desk view: the "Desk" spot in the room, and the way back out. */
+.pod-hit--spot .pod-tag { background: #2a2a2e; color: var(--cream); border-color: var(--cream); }
+.pod-back {
+  position: fixed;
+  left: 20px;
+  top: calc(var(--header-h) + 8px);
+  z-index: 21;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font: 800 15px 'Nunito', system-ui, sans-serif;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.pod-back:focus-visible { outline: 3px solid #ffe9a8; outline-offset: 3px; }
+.pod--desk .pod-welcome,
+.pod--desk .pod-padhits { display: none; }
+
+.pod-shelflist__group { margin: 10px 0 2px; font-weight: 800; font-size: 14px; opacity: 0.75; }
+.pod-shelflist--compact li { padding: 5px 10px; font-size: 14px; }
+
+/* The Library opens as a slim panel on the left while the camera frames the bookcase on the right.
+   The room stays live behind it, so hovering a spine still shows its title. */
+.pod-overlay--side {
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(20, 14, 10, 0.6), rgba(20, 14, 10, 0) 42%);
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: calc(var(--header-h, 72px) + 8px) 16px 16px;
+}
+.pod-overlay--side .pod-dialog {
+  pointer-events: auto;
+  max-width: 420px;
+  margin: 0;
+  max-height: calc(100svh - var(--header-h, 72px) - 28px);
+  overflow-y: auto;
+}
+.pod--lib .pod-welcome,
+.pod--lib .pod-hit,
+.pod--lib .pod-padhits { display: none; }
+
+/* Library rows: a topic tag and a link out to the book */
+.pod-shelflist__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 5px; }
+.pod-booktag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; background: #1f150e; color: #f6ecd6; }
+.pod-shelflist__link { font-size: 14px; font-weight: 800; color: #0b56f6; text-decoration: underline; text-underline-offset: 2px; padding: 4px 2px; }
+.pod-shelflist__link:hover, .pod-shelflist__link:focus-visible { color: #1f150e; }
+.pod-booktip em { display: block; margin-top: 2px; font-style: normal; font-weight: 800; font-size: 12px; color: #0b56f6; }
+
+/* ---------- Conference badges in the room: each opens its event on the Speaking wall ---------- */
+.pod-badgehits { list-style: none; margin: 0; padding: 0; }
+.pod-badgehit {
+  position: absolute;
+  z-index: 5;
+  width: 18px;
+  height: 30px;
+  margin: -15px 0 0 -9px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+.pod-badgehit:hover,
+.pod-badgehit:focus-visible { background: rgba(255, 233, 168, 0.22); outline: 2px solid #ffe9a8; outline-offset: 1px; }
+.pod-badgehit__label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  border: 2px solid var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.pod-badgehit:hover .pod-badgehit__label,
+.pod-badgehit:focus-visible .pod-badgehit__label { opacity: 1; }
+.pod--desk .pod-badgehits,
+.pod--lib .pod-badgehits { display: none; }
+
+/* ---------- The Speaking wall: framed photos, hung salon-style, each opening its event ---------- */
+.pod-frame {
+  display: block;
+  padding: 10px;
+  background: #f3ead6;
+  border: 9px solid #6b4426;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18), 0 6px 0 rgba(0, 0, 0, 0.18), 0 12px 22px rgba(0, 0, 0, 0.28);
+}
+.pod-frame img { display: block; width: 100%; height: 100%; object-fit: cover; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2); }
+.pod-wall {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 22px 18px;
+  align-items: start;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.04) 0 2px, transparent 2px 46px),
+    #2b2f55;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.3), inset 0 18px 30px rgba(0, 0, 0, 0.35);
+}
+.pod-wall__item--1 { transform: rotate(1.2deg) translateY(10px); }
+.pod-wall__item--2 { transform: rotate(-1deg); }
+.pod-wall__item--0 { transform: rotate(-0.6deg); }
+.pod-wall__btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  text-align: center;
+  color: var(--cream);
+  font: inherit;
+  transition: transform 0.15s;
+}
+.pod-wall__btn .pod-frame { aspect-ratio: 4 / 5; }
+.pod-wall__btn:hover,
+.pod-wall__btn:focus-visible { transform: translateY(-4px) scale(1.03); outline: none; }
+.pod-wall__btn:focus-visible .pod-frame { outline: 3px solid #ffe9a8; outline-offset: 3px; }
+.pod-wall__plate {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 10px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  background: linear-gradient(#e2c37a, #b8913f);
+  color: #2a1d08;
+  font-size: 12px;
+  line-height: 1.25;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.pod-wall__plate strong { font-size: 13px; }
+.pod-event { display: flex; flex-direction: column; gap: 8px; }
+.pod-event__back { align-self: flex-start; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.pod-event__figure { margin: 0; text-align: center; }
+.pod-frame--big { display: inline-block; max-width: 100%; }
+.pod-frame--big img { max-height: 56vh; width: auto; max-width: 100%; height: auto; }
+.pod-event__figure figcaption { margin-top: 8px; font-size: 14px; opacity: 0.8; }
+.pod-event__thumbs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.pod-event__thumb { width: 64px; height: 64px; padding: 0; border: 3px solid transparent; border-radius: 6px; overflow: hidden; cursor: pointer; background: none; }
+.pod-event__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pod-event__thumb[aria-pressed='true'] { border-color: var(--ink); }
+.pod-event__name { margin: 0; font-size: 22px; }
+@media (max-width: 520px) {
+  .pod-wall { grid-template-columns: repeat(2, 1fr); padding: 12px; gap: 16px 12px; }
 }

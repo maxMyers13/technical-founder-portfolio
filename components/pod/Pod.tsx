@@ -2,11 +2,25 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EMAIL, GITHUB_URL, LINKEDIN_URL, X_URL } from '../../constants';
 import { Route } from '../../types';
 import PodPanel from './PodPanel';
+import { EVENTS } from './events';
 import { startPodRoom, PodRoom } from './roomGL';
 import { WORLDS, WORLD_HASH_PREFIX, WorldId, worldFromHash } from './worlds';
 import './pod.css';
 
 const CALM_KEY = 'wm3-pod-calm';
+
+/** The controller's buttons: the d-pad's four arms and the four face buttons, each a section. */
+const PAD_DPAD: ['up' | 'left' | 'right' | 'down', WorldId][] = [
+  ['up', 'speaking'],
+  ['left', 'writing'],
+  ['right', 'library'],
+  ['down', 'life'],
+];
+const PAD_FACE: ['triangle' | 'circle' | 'cross', WorldId][] = [
+  ['triangle', 'lilo'],
+  ['circle', 'builds'],
+  ['cross', 'ask'],
+];
 
 interface Props {
   onNavigate: (route: Route) => void;
@@ -26,8 +40,12 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
   const returnFocus = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const roomRef = useRef<PodRoom | null>(null);
-  const hitRefs = useRef<Partial<Record<WorldId, HTMLButtonElement | null>>>({});
+  const hitRefs = useRef<Record<string, HTMLElement | null>>({});
   const [glOn, setGlOn] = useState(false);
+  // Desk view: the camera stepped up to the desk (not a section, so no panel).
+  const [atDesk, setAtDesk] = useState(false);
+  // A conference badge was clicked: Speaking opens straight onto that event.
+  const [eventId, setEventId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -54,11 +72,39 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
     };
   }, [open]);
 
-  const openWorld = useCallback((id: WorldId) => {
-    returnFocus.current = document.activeElement as HTMLElement | null;
-    openedHere.current = true;
-    window.location.hash = WORLD_HASH_PREFIX + id;
-  }, []);
+  // Clicking anything glides the camera in to its object first, then opens the world (straight away when
+  // motion is reduced or the room isn't rendering).
+  const flight = useRef(0);
+  const openWorld = useCallback(
+    (id: WorldId) => {
+      returnFocus.current = document.activeElement as HTMLElement | null;
+      openedHere.current = true;
+      window.clearTimeout(flight.current);
+      const go = () => {
+        window.location.hash = WORLD_HASH_PREFIX + id;
+      };
+      if (roomRef.current && glOn && !calm) {
+        roomRef.current.focus(id);
+        flight.current = window.setTimeout(go, 560);
+      } else go();
+    },
+    [glOn, calm],
+  );
+
+  // The camera follows the open world: in when one opens (deep links too), back out when it closes.
+  useEffect(() => {
+    roomRef.current?.focus(open ?? (atDesk ? 'desk' : null));
+  }, [open, atDesk]);
+
+  // Esc steps back from the desk when no panel is open.
+  useEffect(() => {
+    if (!atDesk || open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAtDesk(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [atDesk, open]);
 
   const close = useCallback(() => {
     if (openedHere.current) {
@@ -123,7 +169,7 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
   });
 
   return (
-    <div className={`pod${calm ? ' pod--calm' : ''}`}>
+    <div className={`pod${calm ? ' pod--calm' : ''}${atDesk ? ' pod--desk' : ''}${open === 'library' ? ' pod--lib' : ''}`}>
       <header className="pod-header" inert={open ? true : undefined}>
         <a className="pod-brand" href="#now">
           <span className="pod-display pod-brand__name">Max Myers</span>
@@ -143,7 +189,7 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
         </button>
       </header>
 
-      <main className="pod-stage" inert={open ? true : undefined}>
+      <main className="pod-stage" inert={open && open !== 'library' ? true : undefined}>
         <div
           className={`pod-scene${glOn ? ' pod-scene--gl' : ''}`}
           onPointerMove={(e) => {
@@ -176,6 +222,79 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
                 </span>
               </button>
             ))}
+          {glOn && !atDesk && (
+            <button
+              type="button"
+              className="pod-hit pod-hit--spot"
+              tabIndex={-1}
+              aria-hidden="true"
+              ref={(el) => {
+                hitRefs.current.desk = el;
+              }}
+              style={{ left: -9999, top: -9999 }}
+              onClick={() => setAtDesk(true)}
+            >
+              <span className="pod-tag pod-tag--sm">Desk</span>
+            </button>
+          )}
+          {glOn && (
+            <ul className="pod-badgehits" aria-label="Conference badges">
+              {EVENTS.map((ev) => (
+                <li key={ev.id}>
+                  <button
+                    type="button"
+                    className="pod-badgehit"
+                    ref={(el) => {
+                      hitRefs.current[`badge:${ev.id}`] = el;
+                    }}
+                    style={{ left: -9999, top: -9999 }}
+                    onClick={() => {
+                      setEventId(ev.id);
+                      openWorld('speaking');
+                    }}
+                  >
+                    <span className="pod-badgehit__label">{ev.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {glOn && (
+            <ul className="pod-padhits" aria-label="Controller: go anywhere">
+              {[...PAD_DPAD.map(([slot, id]) => ({ slot, id })), ...PAD_FACE.map(([slot, id]) => ({ slot, id }))].map(({ slot, id }) => {
+                const w = WORLDS.find((x) => x.id === id)!;
+                return (
+                  <li key={slot}>
+                    <button
+                      type="button"
+                      className={`pod-padhit pod-padhit--${slot}`}
+                      ref={(el) => {
+                        hitRefs.current[`pad:${slot}`] = el;
+                      }}
+                      style={{ left: -9999, top: -9999 }}
+                      onClick={() => openWorld(id)}
+                    >
+                      <span className="pod-padhit__label">{w.label}</span>
+                      <span className="pod-sr">: {w.hint}</span>
+                    </button>
+                  </li>
+                );
+              })}
+              <li>
+                <a
+                  className="pod-padhit pod-padhit--square"
+                  href={`mailto:${EMAIL}`}
+                  ref={(el) => {
+                    hitRefs.current['pad:square'] = el;
+                  }}
+                  style={{ left: -9999, top: -9999 }}
+                >
+                  <span className="pod-padhit__label">Contact</span>
+                  <span className="pod-sr">: email Max</span>
+                </a>
+              </li>
+            </ul>
+          )}
           <div className="pod-flat">
           <div className="pod-ceiling" aria-hidden="true">
             <div className="pod-ceiling__rib pod-ceiling__rib--l" />
@@ -192,7 +311,6 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
                 <img className="pod-life__track" src="/assets/photos/track-race.jpg" alt="" />
                 <span className="pod-tag pod-life__tag">Life</span>
               </button>
-              <div className="pod-chair" />
             </div>
 
             <div className="pod-wing pod-wing--right">
@@ -200,7 +318,7 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
               <span className="pod-star pod-tw" style={{ left: '58%', top: '64%', animationDelay: '-2s' }} />
               <div className="pod-sconce" style={{ left: '74%', top: '58%' }} />
               <button {...hot('speaking')} className="pod-hot pod-speak">
-                <img className="pod-speak__photo" src="/assets/photos/on-stage-conference.jpg" alt="" />
+                <img className="pod-speak__photo" src="/assets/photos/yc-startup-school.jpg" alt="" />
                 <span className="pod-tag">Speaking</span>
               </button>
               <button {...hot('writing')} className="pod-hot pod-shelf">
@@ -249,7 +367,7 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
                 <i className="pod-globe__land pod-globe__land--c" />
                 <i className="pod-globe__pin" />
               </span>
-              <span className="pod-tag pod-tag--lg pod-glow">LILO</span>
+              <span className="pod-tag pod-tag--lg pod-glow">Pathion</span>
             </button>
 
             <button {...hot('builds')} className="pod-hot pod-moon">
@@ -288,8 +406,56 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
 
           <div className="pod-welcome">
             <h1 className="pod-display pod-welcome__title">Welcome to Max's pod</h1>
-            <p className="pod-welcome__sub">Click anything with a label, or use the console below.</p>
+            <p className="pod-welcome__sub">Click anything with a label, or use the controller below.</p>
           </div>
+
+          <nav className="pod-pad" aria-label="Controller: go anywhere">
+            <div className="pod-pad__body">
+              <div className="pod-pad__grip pod-pad__grip--l" aria-hidden="true" />
+              <div className="pod-pad__grip pod-pad__grip--r" aria-hidden="true" />
+              <ul className="pod-pad__dpad">
+                {PAD_DPAD.map(([dir, id]) => {
+                  const w = WORLDS.find((x) => x.id === id)!;
+                  return (
+                    <li key={id} className={`pod-pad__slot pod-pad__slot--${dir}`}>
+                      <button type="button" className={`pod-pad__arm pod-pad__arm--${dir}`} onClick={() => openWorld(id)}>
+                        <span className="pod-pad__label">{w.label}</span>
+                        <span className="pod-sr">: {w.hint}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <ul className="pod-pad__face">
+                {PAD_FACE.map(([shape, id]) => {
+                  const w = WORLDS.find((x) => x.id === id)!;
+                  return (
+                    <li key={id} className={`pod-pad__slot pod-pad__slot--${shape}`}>
+                      <button type="button" className={`pod-pad__btn pod-pad__btn--${shape}`} onClick={() => openWorld(id)}>
+                        <span className="pod-pad__glyph" aria-hidden="true" />
+                        <span className="pod-pad__label">{w.label}</span>
+                        <span className="pod-sr">: {w.hint}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+                <li className="pod-pad__slot pod-pad__slot--square">
+                  <a className="pod-pad__btn pod-pad__btn--square" href={`mailto:${EMAIL}`}>
+                    <span className="pod-pad__glyph" aria-hidden="true" />
+                    <span className="pod-pad__label">Contact</span>
+                    <span className="pod-sr">: email Max</span>
+                  </a>
+                </li>
+              </ul>
+              <div className="pod-pad__mid" aria-hidden="true">
+                <span className="pod-pad__pill" />
+                <span className="pod-pad__home" />
+                <span className="pod-pad__pill" />
+              </div>
+              <div className="pod-pad__stick pod-pad__stick--l" aria-hidden="true" />
+              <div className="pod-pad__stick pod-pad__stick--r" aria-hidden="true" />
+            </div>
+          </nav>
 
           <nav className="pod-console" aria-label="Console">
             <p className="pod-console__label">Console: go anywhere</p>
@@ -318,7 +484,25 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
         </span>
       </footer>
 
-      {open && <PodPanel world={open} onClose={close} onNavigate={onNavigate} onAsk={onAsk} />}
+      {atDesk && !open && (
+        <button type="button" className="pod-back" onClick={() => setAtDesk(false)}>
+          Back to the pod
+        </button>
+      )}
+
+      {open && (
+        <PodPanel
+          world={open}
+          event={open === 'speaking' ? eventId : null}
+          onEvent={setEventId}
+          onClose={() => {
+            setEventId(null);
+            close();
+          }}
+          onNavigate={onNavigate}
+          onAsk={onAsk}
+        />
+      )}
     </div>
   );
 };

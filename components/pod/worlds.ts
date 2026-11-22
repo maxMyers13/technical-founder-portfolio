@@ -1,6 +1,6 @@
 import { Route } from '../../types';
 
-export type WorldId = 'lilo' | 'builds' | 'ask' | 'life' | 'speaking' | 'writing';
+export type WorldId = 'lilo' | 'builds' | 'ask' | 'life' | 'speaking' | 'writing' | 'library';
 
 export interface World {
   id: WorldId;
@@ -13,12 +13,13 @@ export interface World {
 }
 
 export const WORLDS: World[] = [
-  { id: 'lilo', label: 'LILO', hint: 'the big one, what Max builds now', dot: '#2E5D8C', route: 'lilo' },
+  { id: 'lilo', label: 'Pathion', hint: 'the company, and LILO, what Max builds now', dot: '#2E5D8C', route: 'lilo' },
   { id: 'builds', label: 'Builds', hint: 'Edge, Chromium and side quests', dot: '#B39A6E', route: 'builds' },
   { id: 'ask', label: 'Ask WM3', hint: 'ask the post archive anything', dot: '#FFF6E5', route: 'ask' },
   { id: 'life', label: 'Life', hint: 'Maryland, track, Microsoft', dot: '#C9A04A', route: 'life' },
   { id: 'speaking', label: 'Speaking', hint: 'talks and workshops', dot: '#B83A26', route: 'speaking' },
   { id: 'writing', label: 'Writing', hint: 'guides, written properly', dot: '#2F6F6B', route: 'writing' },
+  { id: 'library', label: 'Library', hint: 'books Max has read and his favourite games', dot: '#7A4A2A', route: 'writing' },
 ];
 
 /**
