@@ -79,12 +79,32 @@ export const WORKSHOPS: { slide: string; title: string; covers: string }[] = [
   { slide: 'personal-project', title: 'How to Build a Personal Project With AI That Actually Gets You Hired', covers: 'Picking what to build, building it with AI, and explaining your decisions in the interview.' },
 ];
 
-/** Formats Pathion runs on its own channels, the ones Max hosts or co-hosts. */
-export const FORMATS: { title: string; what: string; when: string }[] = [
-  { title: 'Roast Your Resume', what: 'Live critiques of submitted resumes on LinkedIn Live, YouTube or Discord.', when: '10 episodes, Mar 2025 to Oct 2026' },
-  { title: 'Live Mock Interview', what: 'A full interview, streamed, so everyone watching learns from one candidate.', when: 'Summer 2025 and 2026' },
-  { title: 'Weekly Kickoff', what: 'Monday nights on YouTube Live for the Summer Academy: the week’s learning, deadlines and events.', when: '12 weeks, summer 2026' },
-  { title: 'Academy Hackathon', what: 'A kickoff stream, a 24-hour build in teams of two to four, three-minute demos and judging.', when: 'Sep 2026' },
+/** The Pathion channel, where the recordings below live. */
+export const YOUTUBE_CHANNEL = 'https://www.youtube.com/@joinpathion';
+export const watchUrl = (id: string) => `https://www.youtube.com/watch?v=${id}`;
+
+/**
+ * Formats Pathion runs on its own channels, the ones Max hosts or co-hosts. `watch` lists the recordings that are
+ * public on the YouTube channel (video ids read off its Live tab on Nov 22, 2026); episodes that only ran on
+ * LinkedIn Live or Discord have no link.
+ */
+export const FORMATS: { title: string; what: string; when: string; watch: { label: string; id: string }[] }[] = [
+  {
+    title: 'Roast Your Resume', what: 'Live critiques of submitted resumes on LinkedIn Live, YouTube or Discord.', when: '10 episodes, Mar 2025 to Oct 2026',
+    watch: [{ label: 'Part 1', id: '5ktcp6AM19Q' }, { label: 'Part 2', id: '66HqG495oT4' }, { label: 'With Kwaku', id: 'kf3it25Df0o' }],
+  },
+  {
+    title: 'Live Mock Interview', what: 'A full interview, streamed, so everyone watching learns from one candidate.', when: 'Summer 2025 and 2026',
+    watch: [{ label: 'Mock interview', id: '3ywovn6tpw0' }],
+  },
+  {
+    title: 'Weekly Kickoff', what: 'Monday nights on YouTube Live for the Summer Academy: the week’s learning, deadlines and events.', when: '12 weeks, summer 2026',
+    watch: [{ label: 'Wk 1', id: 'YsEXGqHw8mw' }, { label: 'Wk 2', id: 'Ja7xqonsSJw' }, { label: 'Wk 3', id: 'jegMxqQ27Wg' }, { label: 'Wk 4', id: 'hxqNAqoaf1A' }, { label: 'Wk 5', id: 'NogzsCk1zq0' }, { label: 'Wk 6', id: '72-U7htj34k' }, { label: 'Wk 7', id: 'jYSYvET5M4g' }, { label: 'Wk 8', id: '1H3Jk0ZuOX4' }, { label: 'Wk 9', id: 'UsD0wMkzkbs' }, { label: 'Wk 10', id: 'S7vnlQqeLR8' }, { label: 'Wk 11', id: 'tTgVfykPfHM' }, { label: 'Wk 12', id: 'tXjbRjv8a4M' }],
+  },
+  {
+    title: 'Academy Hackathon', what: 'A kickoff stream, a 24-hour build in teams of two to four, three-minute demos and judging.', when: 'Sep 2026',
+    watch: [{ label: 'Kickoff', id: 'XgyG0cGZfR4' }, { label: 'Build 1', id: 'CKVjnXJqhxQ' }, { label: 'Build 2', id: 'hgZcgq18lSw' }, { label: 'Winning project', id: 'WbIb-SBFMYU' }],
+  },
 ];
 
 /** Everyone who has booked a session, from the catalog's "Who we've worked with" table. */

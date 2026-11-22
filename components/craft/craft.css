@@ -524,7 +524,16 @@
 }
 .spk-format h3 { font-size: 20px !important; color: var(--gold); }
 .spk-format p { font-size: 14px; line-height: 1.5; color: #e6dccb; }
-.spk-format span { margin-top: auto; font-size: 12px; font-weight: 900; color: var(--peach); }
+.spk-format > span { margin-top: auto; font-size: 12px; font-weight: 900; color: var(--peach); }
+.spk-eps { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 4px 0 8px; padding: 0; }
+.spk-eps a {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 3px 9px; border-radius: 999px;
+  border: 2px solid var(--ink); background: var(--cream); color: var(--ink); font-size: 12px; font-weight: 900;
+  text-decoration: none; box-shadow: 2px 2px 0 var(--ink);
+}
+.spk-eps a::before { content: '▶'; font-size: 8px; color: var(--red); }
+.spk-eps a:hover, .spk-eps a:focus-visible { background: var(--gold); translate: -1px -1px; box-shadow: 3px 3px 0 var(--ink); }
+.spk-sub a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 
 .spk-bio {
   display: flex; flex-direction: column; gap: 16px; padding: 28px; border-radius: 22px;
@@ -541,8 +550,9 @@
 }
 @media (max-width: 760px) {
   .craft-sheet > main.spk { padding: 32px 20px 48px !important; gap: 40px; }
-  .spk-stat { width: 100px; height: 100px; }
-  .spk-stat b { font-size: 34px; }
+  .spk-stats { flex-wrap: wrap; justify-content: center; }
+  .spk-stat { width: 92px; height: 92px; }
+  .spk-stat b { font-size: 30px; }
   .spk-card img { height: 200px; }
   .spk-prints { grid-template-columns: repeat(2, 1fr); }
   .spk-prints .spk-print:nth-child(n + 3) { display: none; }

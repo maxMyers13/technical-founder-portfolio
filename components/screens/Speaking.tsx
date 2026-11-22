@@ -1,7 +1,7 @@
 import React from 'react';
 import { EMAIL, SANDBOX_SLIDES, TALK_VIDEO_URL, TECHSGIVING_SLIDES } from '../../constants';
 import { Route } from '../../types';
-import { FORMATS, GIGS, Gig, HOSTS, KIND_LABEL, WORKSHOPS } from './speakingData';
+import { FORMATS, GIGS, Gig, HOSTS, KIND_LABEL, WORKSHOPS, YOUTUBE_CHANNEL, watchUrl } from './speakingData';
 
 interface Props {
   onNavigate: (route: Route) => void;
@@ -151,12 +151,27 @@ const Speaking: React.FC<Props> = () => (
 
     <section className="spk-section">
       <h2 className="spk-h">On our own channels</h2>
-      <p className="spk-sub">Pathion’s recurring live formats, on YouTube, LinkedIn Live and Discord.</p>
+      <p className="spk-sub">
+        Pathion’s recurring live formats, on{' '}
+        <a href={YOUTUBE_CHANNEL} target="_blank" rel="noopener noreferrer">
+          YouTube
+        </a>
+        , LinkedIn Live and Discord. Each button opens that recording.
+      </p>
       <ul className="spk-formats">
         {FORMATS.map((f) => (
           <li key={f.title} className="spk-format">
             <h3>{f.title}</h3>
             <p>{f.what}</p>
+            <ul className="spk-eps" aria-label={`${f.title} on YouTube`}>
+              {f.watch.map((v) => (
+                <li key={v.id}>
+                  <a href={watchUrl(v.id)} target="_blank" rel="noopener noreferrer" aria-label={`${f.title}, ${v.label}, on YouTube`}>
+                    {v.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
             <span>{f.when}</span>
           </li>
         ))}
