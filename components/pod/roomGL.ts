@@ -2365,11 +2365,11 @@ export function startPodRoom(
 
     // Coco, asleep under the desk. From Max's photos: a lean, short-coated dog of about 50 pounds, near-black with
     // brown in it, a greying muzzle, a thin tail and a white spot on her chest, in her green Survey Corps hoodie with
-    // the hood up. She lies curled on her side, chin on her front paws, tail wrapped round, her back (and the patch)
+    // the hood down. She lies curled on her side, chin on her front paws, tail wrapped round, her back (and the patch)
     // toward the room, and she breathes slowly. Built in her own frame in millimetres (x toward her nose, y up, z
     // toward the wall), scaled up from a small-dog sketch, and turned to lie along the desk.
     {
-      const COAT: [number, number, number] = [0.045, 0.032, 0.026];
+      const COAT: [number, number, number] = [0.07, 0.052, 0.042];
       const MUZZLE: [number, number, number] = [0.3, 0.26, 0.24];
       const HOODIE: [number, number, number] = [0.07, 0.24, 0.15];
       const SC = 1.4; // a 50 lb dog: about 1.4x the first sketch
@@ -2396,14 +2396,12 @@ export function startPodRoom(
       // her spine from rump to the stop of her muzzle: [x, y, z, half-width, half-height]
       const SPINE = [
         [-240, 72, 20, 42, 42], [-205, 82, 20, 80, 70], [-160, 88, 20, 102, 84], [-95, 89, 13, 99, 82], [-35, 87, 6, 88, 76], [40, 94, 0, 100, 88],
-        [110, 95, 5, 102, 88], [160, 93, 13, 95, 84], [205, 91, 36, 70, 64], [240, 90, 56, 62, 57], [278, 90, 70, 66, 61],
-        [308, 86, 75, 58, 52], [332, 79, 77, 46, 40],
+        [110, 95, 5, 102, 88], [160, 93, 13, 95, 84], [205, 90, 36, 64, 58], [238, 89, 56, 55, 50], [276, 92, 70, 68, 62],
+        [308, 87, 75, 60, 53], [332, 79, 77, 46, 40],
       ];
-      // the hoodie follows the same spine from behind her ribs up over her head, a little proud of her coat
+      // the hoodie follows the same spine from behind her ribs to her neck, a little proud of her coat, hood down
       const pad = (r: number[], by: number) => [r[0], r[1] + by * 0.25, r[2], r[3] + by, r[4] + by];
-      const HOODIE_RINGS = [
-        [-112, 89, 15, 108, 91], [-95, 89, 13, 106, 89], ...SPINE.slice(4, 10).map((r) => pad(r, 7)), pad(SPINE[10], 9), [296, 90, 73, 76, 71], [302, 90, 74, 80, 75],
-      ];
+      const HOODIE_RINGS = [[-112, 89, 15, 108, 91], [-95, 89, 13, 106, 89], ...SPINE.slice(4, 9).map((r) => pad(r, 7)), [214, 90, 41, 72, 66], [222, 90, 45, 76, 70]];
       add(
         skin(SPINE, 1, COAT, breathe, false, 0.9),
         // the greying muzzle carries on from the stop to her nose
@@ -2412,7 +2410,12 @@ export function startPodRoom(
         // closed eyes: two short dark slits
         part(2, [0.02, 0.015, 0.015], [322, 100, 118], [12, 3, 3], { rough: 0.6, ...breathe }),
         part(2, [0.02, 0.015, 0.015], [322, 100, 30], [12, 3, 3], { rough: 0.6, ...breathe }),
-        // the hoodie, hood up, with the wings printed on her back: one knitted shell, rising and falling with her
+        // her ears: soft flaps folded down either side of her skull
+        skin([[272, 132, 32, 24, 7], [266, 118, 12, 27, 7], [260, 96, 0, 20, 6], [258, 84, -3, 9, 4]], 1, COAT, breathe),
+        skin([[272, 132, 108, 24, 7], [266, 118, 128, 27, 7], [260, 96, 140, 20, 6], [258, 84, 143, 9, 4]], 1, COAT, breathe),
+        // the hood, down: a soft roll of green bunched across the back of her neck
+        skin([[208, 138, -8, 22, 20], [214, 152, 22, 34, 27], [216, 156, 48, 37, 29], [214, 152, 74, 34, 27], [208, 138, 100, 22, 20]], 1, HOODIE, { ...breathe, rough: 0.88, wrap: 0.45 }),
+        // the hoodie, with the wings printed on her back: one knitted shell, rising and falling with her
         skin(HOODIE_RINGS, 2, [1, 1, 1], { ...breathe, tex: paintTex(() => P.cocoHoodie()), rough: 0.88, wrap: 0.45 }, true, 0.9),
         // the hind leg folded along her side: thigh, hock, and the paw pointing forward
         skin([[-185, 62, 88, 34, 40], [-125, 58, 106, 40, 44], [-65, 40, 117, 27, 27], [-20, 25, 121, 19, 18], [28, 20, 121, 17, 15], [48, 19, 121, 19, 15]], 1, COAT),
