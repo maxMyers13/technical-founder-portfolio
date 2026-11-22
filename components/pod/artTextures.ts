@@ -337,3 +337,160 @@ export function singletFabric(w = 512, h = 760) {
   // binding round the neck and armholes reads as a darker edge, which the slab's bevel picks up
   return c;
 }
+
+/**
+ * The Maryland state flag cut as a medal ribbon: its two quarters, the Calvert arms (gold and black pales under
+ * a counterchanged diagonal) and the Crossland arms (a red and white cross bottony, counterchanged), alternating
+ * down the strip. `start` picks which quarter is at the top, so the two halves of a looped ribbon can differ.
+ */
+export function marylandRibbon(start: 0 | 1 = 0, w = 160, squares = 6) {
+  const h = w * squares;
+  const { c, g } = make(w, h);
+  const GOLD = '#eab52c', BLACK = '#141210', RED = '#c3202d', WHITE = '#f7f4ec';
+  const calvert = (y0: number) => {
+    const pales = (a: string, b: string) => {
+      for (let i = 0; i < 6; i++) {
+        g.fillStyle = i % 2 ? b : a;
+        g.fillRect((i * w) / 6, y0, w / 6 + 0.5, w);
+      }
+    };
+    pales(GOLD, BLACK);
+    // the bend, from the top left corner to the bottom right, with the colours swapped inside it
+    g.save();
+    g.beginPath();
+    const t = w * 0.19;
+    g.moveTo(0, y0);
+    g.lineTo(t, y0);
+    g.lineTo(w, y0 + w - t);
+    g.lineTo(w, y0 + w);
+    g.lineTo(w - t, y0 + w);
+    g.lineTo(0, y0 + t);
+    g.closePath();
+    g.clip();
+    pales(BLACK, GOLD);
+    g.restore();
+  };
+  const crossland = (y0: number) => {
+    const cx = w / 2, cy = y0 + w / 2;
+    const quarters = (a: string, b: string) => {
+      g.fillStyle = a;
+      g.fillRect(0, y0, cx, w / 2);
+      g.fillRect(cx, cy, cx, w / 2);
+      g.fillStyle = b;
+      g.fillRect(cx, y0, cx, w / 2);
+      g.fillRect(0, cy, cx, w / 2);
+    };
+    quarters(WHITE, RED);
+    // the cross bottony: four arms, each ending in three buttons
+    g.save();
+    g.beginPath();
+    const arm = w * 0.085, reach = w * 0.3, bud = w * 0.075;
+    g.rect(cx - arm, cy - reach, arm * 2, reach * 2);
+    g.rect(cx - reach, cy - arm, reach * 2, arm * 2);
+    for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+      const ex = cx + dx * reach, ey = cy + dy * reach;
+      for (const [bx, by] of [[dx * bud, dy * bud], [dy * bud * 1.35, dx * bud * 1.35], [-dy * bud * 1.35, -dx * bud * 1.35]]) {
+        g.moveTo(ex + bx + bud, ey + by);
+        g.arc(ex + bx, ey + by, bud, 0, Math.PI * 2);
+      }
+    }
+    g.clip();
+    quarters(RED, WHITE);
+    g.restore();
+  };
+  for (let i = 0; i < squares; i++) ((i + start) % 2 ? crossland : calvert)(i * w);
+  // woven grosgrain: fine cross ribs and a darker selvedge down each edge
+  g.fillStyle = 'rgba(0, 0, 0, 0.1)';
+  for (let y = 0; y < h; y += 4) g.fillRect(0, y, w, 1.2);
+  g.fillStyle = 'rgba(0, 0, 0, 0.22)';
+  g.fillRect(0, 0, w * 0.03, h);
+  g.fillRect(w * 0.97, 0, w * 0.03, h);
+  return c;
+}
+
+/**
+ * The face of Max's gold medal: Maryland 4A state champion in the 500 metres, February 2019. A struck gold disc
+ * with a raised rim, lettering round the edge and the event in the middle. An original design, not the real die.
+ */
+export function stateChampMedal(s = 512) {
+  const { c, g } = make(s, s);
+  const m = s / 2;
+  const body = g.createRadialGradient(m * 0.72, m * 0.6, s * 0.04, m, m, m);
+  body.addColorStop(0, '#fff0b0');
+  body.addColorStop(0.35, '#f1c64a');
+  body.addColorStop(0.8, '#cf9a22');
+  body.addColorStop(1, '#9a6c10');
+  g.fillStyle = body;
+  g.fillRect(0, 0, s, s);
+  const ring = (r: number, lw: number, col: string) => {
+    g.strokeStyle = col;
+    g.lineWidth = lw;
+    g.beginPath();
+    g.arc(m, m, r, 0, Math.PI * 2);
+    g.stroke();
+  };
+  // the raised rim: a dark groove with a lit edge either side
+  ring(m * 0.955, s * 0.03, '#a87a16');
+  ring(m * 0.93, s * 0.008, '#fff3c0');
+  ring(m * 0.6, s * 0.012, '#8a6210');
+  ring(m * 0.585, s * 0.006, '#ffeeb0');
+  // a beaded border between the lettering and the rim
+  g.fillStyle = '#8a6210';
+  for (let i = 0; i < 72; i++) {
+    const a = (i / 72) * Math.PI * 2;
+    g.beginPath();
+    g.arc(m + Math.cos(a) * m * 0.885, m + Math.sin(a) * m * 0.885, s * 0.006, 0, Math.PI * 2);
+    g.fill();
+  }
+  // struck lettering: a dark cut with a highlight below it
+  const struck = (draw: (col: string, dy: number) => void) => {
+    draw('rgba(255, 244, 196, 0.9)', s * 0.004);
+    draw('#5e420a', 0);
+  };
+  const arcText = (text: string, r: number, mid: number, px: number, flip: boolean) => {
+    g.font = `900 ${px}px 'Arial Black', 'Helvetica Neue', Arial, sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    const widths = [...text].map((ch) => g.measureText(ch).width + px * 0.08);
+    const total = widths.reduce((a, b) => a + b, 0);
+    struck((col, dy) => {
+      g.fillStyle = col;
+      let run = -total / 2;
+      [...text].forEach((ch, i) => {
+        const a = mid + ((run + widths[i] / 2) / r) * (flip ? -1 : 1);
+        run += widths[i];
+        g.save();
+        g.translate(m + Math.cos(a) * r, m + Math.sin(a) * r + dy);
+        g.rotate(a + (flip ? -Math.PI / 2 : Math.PI / 2));
+        g.fillText(ch, 0, 0);
+        g.restore();
+      });
+    });
+  };
+  arcText('MARYLAND 4A STATE CHAMPION', m * 0.74, -Math.PI / 2, s * 0.078, false);
+  arcText('FEBRUARY 2019', m * 0.74, Math.PI / 2, s * 0.078, true);
+  // stars between the two runs of lettering
+  for (const a of [Math.PI * 0.985, Math.PI * 0.015]) {
+    struck((col, dy) => {
+      g.fillStyle = col;
+      g.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const rr = i % 2 ? s * 0.012 : s * 0.028;
+        const t = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        g.lineTo(m + Math.cos(a) * m * 0.74 + Math.cos(t) * rr, m + Math.sin(a) * m * 0.74 + Math.sin(t) * rr + dy);
+      }
+      g.fill();
+    });
+  }
+  // the centre: a big 1 for first place, over the event
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  struck((col, dy) => {
+    g.fillStyle = col;
+    g.font = `900 ${s * 0.34}px 'Arial Black', Arial, sans-serif`;
+    g.fillText('1', m, m - s * 0.055 + dy);
+    g.font = `900 ${s * 0.1}px 'Arial Black', Arial, sans-serif`;
+    g.fillText('500M', m, m + s * 0.175 + dy);
+  });
+  return c;
+}

@@ -8,7 +8,7 @@ import { WorldId } from './worlds';
 import { worldMapWhenFontsReady } from './worldMap';
 import * as P from './propTextures';
 import { feature } from './features';
-import { routeMap, singletFabric } from './artTextures';
+import { marylandRibbon, routeMap, singletFabric, stateChampMedal } from './artTextures';
 import { BOOKS, RECORDS, SHELF_TOPICS, bookLink, clothFor, isOwn, nowReading } from './books';
 import { GAMES, caseFor } from './games';
 import { LEARNING } from './learning';
@@ -1366,22 +1366,33 @@ export function startPodRoom(
    * A medal hung on a wall pin, the way a real one hangs: the ribbon is a loop over the pin, so its two strips meet
    * at the top and spread to the jump ring; the medal is struck metal, a thick disc with a raised centre.
    */
-  const hungMedal = (at: Spot, cloth: RGB, stripe: RGB, metalTint: RGB, r: number): Draw[] => {
+  const hungMedal = (
+    at: Spot,
+    cloth: RGB,
+    stripe: RGB,
+    metalTint: RGB,
+    r: number,
+    art?: { ribbon: [WebGLTexture, WebGLTexture]; face: WebGLTexture; width?: number },
+  ): Draw[] => {
     const lat = (dx: number, dy: number, depth: number) => {
       const q = along(at, depth);
       return { x: q.x + Math.cos(at.ry) * dx, y: at.y + dy, z: q.z - Math.sin(at.ry) * dx };
     };
     const pinY = 0.15, ringY = -0.01, spread = 0.03;
+    const rw = art?.width ?? 0.028;
     const len = Math.hypot(spread / 2, pinY - ringY);
     const lean = Math.atan2(spread / 2, pinY - ringY);
     const out: Draw[] = [];
     for (const side of [-1, 1]) {
       const m = lat((side * spread) / 4, (pinY + ringY) / 2, 0.01);
       const f = lat((side * spread) / 4, (pinY + ringY) / 2, 0.0125);
-      out.push(
-        D(box, 1, cloth, m.x, m.y, m.z, 0.028, len, 0.002, { ry: at.ry, rz: side * lean, rough: 0.85, wrap: 0.3 }),
-        D(box, 1, stripe, f.x, f.y, f.z, 0.008, len, 0.001, { ry: at.ry, rz: side * lean, rough: 0.85, wrap: 0.3 }),
-      );
+      // a printed ribbon (a flag, say) is one textured strip; a plain one is cloth with a stripe laid down the middle
+      if (art) out.push(D(box, 2, [1, 1, 1], m.x, m.y, m.z, rw, len, 0.002, { ry: at.ry, rz: side * lean, tex: art.ribbon[side < 0 ? 0 : 1], rough: 0.85 }));
+      else
+        out.push(
+          D(box, 1, cloth, m.x, m.y, m.z, rw, len, 0.002, { ry: at.ry, rz: side * lean, rough: 0.85, wrap: 0.3 }),
+          D(box, 1, stripe, f.x, f.y, f.z, 0.008, len, 0.001, { ry: at.ry, rz: side * lean, rough: 0.85, wrap: 0.3 }),
+        );
     }
     const pin = lat(0, pinY + 0.004, 0.008);
     const ring = lat(0, ringY - 0.004, 0.012);
@@ -1391,16 +1402,18 @@ export function startPodRoom(
       D(ball, 2, [0.7, 0.7, 0.72], pin.x, pin.y, pin.z, 0.006, 0.006, 0.006, { metal: 1, rough: 0.3 }),
       D(tube, 2, metalTint, ring.x, ring.y, ring.z, 0.012, 0.004, 0.012, { ry: at.ry, rz: Math.PI / 2, metal: 1, rough: 0.3 }),
       D(ball, 2, metalTint, disc.x, disc.y, disc.z, r, r, 0.008, { ry: at.ry, metal: 1, rough: 0.28 }),
-      D(ball, 2, metalTint.map((v) => v * 0.86) as RGB, face.x, face.y, face.z, r * 0.62, r * 0.62, 0.007, { ry: at.ry, metal: 1, rough: 0.42 }),
     );
+    // the struck face: a painted die when there is one, otherwise a plain raised centre
+    if (art) {
+      const front = lat(0, ringY - 0.008 - r, 0.0248);
+      out.push(D(coin, 2, [1, 1, 1], front.x, front.y, front.z, r * 1.86, r * 1.86, 1, { ry: at.ry, tex: art.face, metal: 0.15, rough: 0.3 }));
+    } else out.push(D(ball, 2, metalTint.map((v) => v * 0.86) as RGB, face.x, face.y, face.z, r * 0.62, r * 0.62, 0.007, { ry: at.ry, metal: 1, rough: 0.42 }));
     return out;
   };
   const artifacts: Draw[] = [
     // Life: Max at the Microsoft sign in Redmond (1400x1050) and the track photo (1284x1610), each framed
     ...framed(portraitAt, 0.36, 0.27, portrait, { anchor: 'life', anchorDy: -0.27 }),
     ...framed(trackAt, 0.2, 0.25, track, {}, [0.16, 0.13, 0.11]),
-    // a D1 track medal: gold, on a red ribbon with a gold stripe
-    ...hungMedal(medalAt, [0.62, 0.1, 0.09], [0.86, 0.64, 0.18], [1.0, 0.76, 0.34], 0.04),
     // Speaking: the stage photo (1600x1066), framed
     ...framed(stageAt, 0.22, 0.33, standeeTex, { anchor: 'speaking', anchorDy: -0.12 }), // YC Startup School (1067x1600, portrait)
   ];
@@ -1924,6 +1937,14 @@ export function startPodRoom(
       D(garment, 2, [1, 1, 1], shirt.x, shirt.y - 0.004, shirt.z, sh, sh, sh, { ...tilt, tex: fabricTex, rough: 0.85, wrap: 0.35 }),
     );
   }
+  // the gold from the Maryland 4A state championship, February 2019: first in the 500 metres, on a Maryland flag ribbon
+  add(
+    ...hungMedal(medalAt, [0.62, 0.1, 0.09], [0.86, 0.64, 0.18], [1.0, 0.76, 0.34], 0.046, {
+      ribbon: [paintTex(() => marylandRibbon(0)), paintTex(() => marylandRibbon(1))],
+      face: paintTex(() => stateChampMedal()),
+      width: 0.034,
+    }),
+  );
   const m2 = leftAt(1.17, 0.11);
   // the marathon finisher's medal: silver, on a navy ribbon with a white stripe
   add(...hungMedal(m2, [0.1, 0.18, 0.42], [0.9, 0.9, 0.92], [0.84, 0.86, 0.9], 0.036));
@@ -2297,10 +2318,10 @@ export function startPodRoom(
         part(2, [0.02, 0.015, 0.015], [322, 98, 120], [12, 3, 3], { rough: 0.6 }),
         part(2, [0.02, 0.015, 0.015], [322, 98, 22], [12, 3, 3], { rough: 0.6 }),
       );
-      // the wings patch on her back, facing the room and tipped up a little
+      // the wings patch on her back, facing the room and tipped up a little, its top toward her head as on a worn hoodie
       {
         const p = at(40, 108, -124);
-        add(D(box, 2, [0.62, 0.62, 0.62], p.x, p.y, p.z, 125 * SC * MM, 125 * SC * MM, 0.002, { ry: yaw, rx: -0.25, tex: paintTex(() => P.wingsPatch()), rough: 0.85, ...breathe }));
+        add(D(box, 2, [0.62, 0.62, 0.62], p.x, p.y, p.z, 125 * SC * MM, 125 * SC * MM, 0.002, { ry: yaw, rx: -0.25, rz: -Math.PI / 2, tex: paintTex(() => P.wingsPatch()), rough: 0.85, ...breathe }));
       }
       // the tail: a thin curve from the rump round toward her back feet
       for (let i = 0; i <= 9; i++) {
