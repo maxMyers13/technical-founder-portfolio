@@ -3,7 +3,7 @@ import Footer from './components/Footer';
 import Navbar from './components/Navbar';
 import Ask from './components/screens/Ask';
 import Builds from './components/screens/Builds';
-import Home from './components/screens/Home';
+import Pod from './components/pod/Pod';
 import Life from './components/screens/Life';
 import Lilo from './components/screens/Lilo';
 import Speaking from './components/screens/Speaking';
@@ -124,16 +124,10 @@ const App: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <Navbar onNavigate={navigate} theme={theme} onThemeChange={changeTheme} />
+      {route !== 'home' && <Navbar onNavigate={navigate} theme={theme} onThemeChange={changeTheme} />}
 
-      {route === 'home' && (
-        <Home
-          onNavigate={navigate}
-          askValue={askTeaser}
-          onAskChange={setAskTeaser}
-          onAsk={askFromAnywhere}
-        />
-      )}
+      {/* Home is the pod: a full-bleed room with its own header, console and footer. */}
+      {route === 'home' && <Pod onNavigate={navigate} onAsk={askFromAnywhere} />}
       {route === 'writing' && <Writing onNavigate={navigate} />}
       {route === 'builds' && (
         <Builds onNavigate={navigate} filter={filter} onFilterChange={setFilter} />
@@ -161,7 +155,7 @@ const App: React.FC = () => {
       {route === 'lilo' && <Lilo onNavigate={navigate} />}
       {route === 'speaking' && <Speaking onNavigate={navigate} />}
 
-      <Footer onNavigate={navigate} onNavigateToName={navigateToName} />
+      {route !== 'home' && <Footer onNavigate={navigate} onNavigateToName={navigateToName} />}
     </div>
   );
 };

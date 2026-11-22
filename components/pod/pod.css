@@ -1,0 +1,978 @@
+/* ===========================================================
+   The pod: home screen styles. Scoped under .pod so none of it
+   leaks into the other screens, and written as classes so the
+   global mobile rules in index.css (which match inline grids and
+   nav > div) never catch it.
+   =========================================================== */
+
+.pod {
+  --ink: #1f150e;
+  --cream: #fff6e5;
+  --peach: #f4c9a0;
+  --gold: #e8b23a;
+  --card: #c9a27a;
+  --card-dark: #8c6a48;
+  --teal: #2f6f6b;
+  --red: #b83a26;
+  --plum: #5b4b8a;
+  --night: #140e0a;
+  --header-h: 72px;
+  min-height: 100vh;
+  min-height: 100svh;
+  background: var(--night);
+  color: var(--cream);
+  font-family: 'Nunito', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.pod-display {
+  font-family: 'Bagel Fat One', 'Nunito', system-ui, sans-serif;
+  font-weight: 400;
+}
+
+.pod-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes pod-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-3%) rotate(3deg); }
+}
+@keyframes pod-bob2 {
+  0%, 100% { transform: translateY(-4%); }
+  50% { transform: translateY(4%); }
+}
+@keyframes pod-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+@keyframes pod-twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+@keyframes pod-glow {
+  0%, 100% { box-shadow: 3px 3px 0 var(--ink), 0 0 0 0 rgba(255, 233, 168, 0); }
+  50% { box-shadow: 3px 3px 0 var(--ink), 0 0 0 8px rgba(255, 233, 168, 0.55); }
+}
+.pod-bob { animation: pod-bob 6s ease-in-out infinite; }
+.pod-bob2 { animation: pod-bob2 5s ease-in-out infinite; }
+.pod-sway { animation: pod-sway 7s ease-in-out infinite; transform-origin: top center; }
+.pod-tw { animation: pod-twinkle 3s ease-in-out infinite; }
+.pod-glow { animation: pod-glow 2.6s ease-in-out infinite; }
+.pod--calm .pod-bob,
+.pod--calm .pod-bob2,
+.pod--calm .pod-sway,
+.pod--calm .pod-tw,
+.pod--calm .pod-glow { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .pod-bob, .pod-bob2, .pod-sway, .pod-tw, .pod-glow { animation: none; }
+}
+
+/* ---------- Header ---------- */
+
+.pod-header {
+  min-height: var(--header-h);
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 12px 20px;
+}
+.pod-brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-right: auto;
+  color: var(--cream);
+}
+.pod-brand__name { font-size: 26px; line-height: 1; }
+.pod-brand__role { font-size: 14px; font-weight: 700; color: var(--peach); }
+.pod-header__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pod-navbtn {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 2px solid #5a4632;
+  background: transparent;
+  color: var(--cream);
+  font: 800 14px 'Nunito', system-ui, sans-serif;
+  cursor: pointer;
+}
+.pod-navbtn:hover { border-color: var(--cream); }
+.pod-navbtn[aria-pressed='true'] { background: var(--cream); color: var(--night); border-color: var(--cream); }
+.pod-navbtn--dashed { border-style: dashed; border-color: var(--card-dark); font-weight: 700; }
+.pod-navbtn:focus-visible,
+.pod-console__btn:focus-visible,
+.pod-brand:focus-visible,
+.pod-footer a:focus-visible {
+  outline: 3px solid #ffe9a8;
+  outline-offset: 3px;
+}
+
+/* ---------- Stage and scene ---------- */
+
+.pod-stage {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 12px 12px;
+}
+/* The whole room fits the window, so the console is never below the fold. */
+.pod-scene {
+  position: relative;
+  width: min(100%, 1400px, calc((100svh - var(--header-h) - 60px) * 16 / 9));
+  min-width: min(100%, 720px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #241a14;
+  container-type: inline-size;
+}
+.pod-room {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+.pod-scene--gl .pod-room { opacity: 1; }
+.pod-scene--gl .pod-flat { display: none; }
+.pod-hit {
+  position: absolute;
+  z-index: 4;
+  transform: translate(-50%, 0);
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.pod-hit:hover .pod-tag { transform: rotate(-2deg) scale(1.05); }
+.pod-hit:focus-visible {
+  outline: 3px solid #ffe9a8;
+  outline-offset: 3px;
+}
+
+/* Vaulted ceiling: dark dome with two ribs leaning in toward the arch. */
+.pod-ceiling {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 30%;
+  background: radial-gradient(ellipse 70% 120% at 50% 0%, #3a2a1e 0%, #1a130e 72%);
+}
+.pod-ceiling__rib {
+  position: absolute;
+  top: -20%;
+  width: 6%;
+  height: 150%;
+  background: #6b4e34;
+  background-image: repeating-linear-gradient(180deg, rgba(31, 21, 14, 0.12) 0 2px, transparent 2px 12px);
+  border-left: 2px dashed rgba(255, 246, 229, 0.18);
+}
+.pod-ceiling__rib--l { left: 18%; transform: rotate(-38deg); transform-origin: top; }
+.pod-ceiling__rib--r { right: 18%; transform: rotate(38deg); transform-origin: top; }
+
+/* Side windows turn toward you, like walls of a room seen from inside. */
+.pod-wings {
+  position: absolute;
+  inset: 0;
+  perspective: 900px;
+  perspective-origin: 50% 45%;
+}
+.pod-wing {
+  position: absolute;
+  top: 12%;
+  bottom: 22%;
+  width: 34%;
+  background-color: #2e3557;
+  background-image: radial-gradient(rgba(255, 246, 229, 0.09) 2px, transparent 3px);
+  background-size: 26px 26px;
+  border: 10px solid #5a4632;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.45);
+}
+.pod-wing--left { left: -1%; transform-origin: right center; transform: rotateY(42deg); }
+.pod-wing--right { right: -1%; transform-origin: left center; transform: rotateY(-42deg); background-color: #262b4c; }
+
+.pod-star {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #ffe9a8;
+  transform: rotate(45deg);
+}
+.pod-sconce {
+  position: absolute;
+  width: 26px;
+  height: 52px;
+}
+.pod-sconce::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 34px;
+  border-radius: 50% 50% 40% 40%;
+  background: rgba(255, 233, 168, 0.9);
+  box-shadow: 0 0 34px 14px rgba(255, 233, 168, 0.35);
+}
+.pod-sconce::after {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 34px;
+  width: 8px;
+  height: 18px;
+  background: #b88a3a;
+  box-shadow: -9px 0 0 -2px #b88a3a, 9px 0 0 -2px #b88a3a;
+}
+
+/* Scene objects are buttons; they scale on hover and show a sticker tag. */
+.pod-hot {
+  position: absolute;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.2s ease;
+}
+.pod-hot:hover { transform: scale(1.05); }
+.pod-tag {
+  display: inline-block;
+  background: var(--cream);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  padding: 3px 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: 'Bagel Fat One', 'Nunito', system-ui, sans-serif;
+  font-size: clamp(13px, 1.4cqw, 20px);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.pod-tag--sm { font-family: 'Nunito', system-ui, sans-serif; font-weight: 800; font-size: clamp(11px, 1.05cqw, 15px); padding: 2px 9px; }
+.pod-tag--lg { font-size: clamp(14px, 1.6cqw, 22px); }
+
+/* Left wing: the Life wall, with its tag under the frames it belongs to. */
+.pod-life {
+  left: 24%;
+  top: 14%;
+  width: 60%;
+  height: 56%;
+}
+.pod-life__portrait {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 46%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 8px solid #c9a04a;
+  box-shadow: 0 0 0 3px #6b4e1e, 0 10px 20px rgba(0, 0, 0, 0.4);
+  transform: rotate(-4deg);
+}
+.pod-life__track {
+  position: absolute;
+  left: 56%;
+  top: 16%;
+  width: 38%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 6px solid #c9a04a;
+  box-shadow: 0 0 0 3px #6b4e1e, 0 8px 16px rgba(0, 0, 0, 0.4);
+  transform: rotate(5deg);
+}
+.pod-life__tag { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); }
+.pod-chair {
+  position: absolute;
+  left: 30%;
+  bottom: 4%;
+  width: 30%;
+  height: 20%;
+}
+.pod-chair::before {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 0;
+  height: 62%;
+  background: #7c8c3e radial-gradient(#4f5a24 2px, transparent 3px) 0 0 / 14px 14px;
+  border: 3px solid #4f5a24;
+  border-radius: 14px 14px 4px 4px;
+}
+.pod-chair::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 54%;
+  height: 46%;
+  background: linear-gradient(#8c6a48 0 45%, transparent 45%), linear-gradient(90deg, #6b4e1e 0 8%, transparent 8% 92%, #6b4e1e 92%);
+  border-radius: 6px;
+}
+
+/* Right wing: a stage photo for Speaking and a shelf for Writing. */
+.pod-speak {
+  left: 12%;
+  top: 12%;
+  width: 46%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.pod-speak__photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 8px solid #c9a04a;
+  box-shadow: 0 0 0 3px #6b4e1e, 0 10px 20px rgba(0, 0, 0, 0.4);
+  transform: rotate(3deg);
+}
+.pod-shelf {
+  left: 14%;
+  bottom: 6%;
+  width: 62%;
+  height: 28%;
+}
+.pod-shelf__books {
+  position: absolute;
+  left: 4%;
+  bottom: 18%;
+  width: 54%;
+  height: 72%;
+  display: flex;
+  align-items: flex-end;
+  gap: 4%;
+}
+.pod-shelf__books i {
+  display: block;
+  width: 14%;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+}
+.pod-shelf__lean { transform: rotate(12deg); transform-origin: bottom left; }
+.pod-shelf__paper {
+  position: absolute;
+  right: 4%;
+  bottom: 18%;
+  width: 34%;
+  height: 16%;
+  background: var(--cream) repeating-linear-gradient(90deg, transparent 0 8px, rgba(31, 21, 14, 0.25) 8px 9px);
+  border: 2px solid var(--ink);
+  transform: rotate(-6deg);
+}
+.pod-shelf__board {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18%;
+  background: #6b4e1e;
+  border-radius: 4px;
+}
+.pod-shelf__tag { position: absolute; right: 6%; top: -4%; }
+
+/* Cardboard posts between the side windows and the centre. */
+.pod-post {
+  position: absolute;
+  top: 0;
+  bottom: 16%;
+  width: 5%;
+  background: #8c6a48;
+  background-image: repeating-linear-gradient(180deg, rgba(31, 21, 14, 0.1) 0 2px, transparent 2px 12px);
+}
+.pod-post--l { left: 29%; border-right: 3px dashed rgba(255, 246, 229, 0.25); box-shadow: inset -14px 0 0 rgba(0, 0, 0, 0.22); }
+.pod-post--r { right: 29%; border-left: 3px dashed rgba(255, 246, 229, 0.25); box-shadow: inset 14px 0 0 rgba(0, 0, 0, 0.22); }
+
+.pod-arch {
+  position: absolute;
+  left: 33%;
+  width: 34%;
+  top: 9%;
+  bottom: 15%;
+  background: #a27c54 repeating-linear-gradient(90deg, rgba(31, 21, 14, 0.07) 0 2px, transparent 2px 12px);
+  border-radius: 50% 50% 0 0 / 24% 24% 0 0;
+  box-shadow: inset 0 0 0 12px #8c6a48, 0 0 0 4px #5a4632;
+}
+
+/* Centre window: the worlds float here, over a sill with a few objects. */
+.pod-window {
+  position: absolute;
+  left: 36%;
+  width: 28%;
+  top: 23%;
+  bottom: 18%;
+  overflow: hidden;
+  background-color: #8b5a86;
+  background-image: radial-gradient(rgba(255, 246, 229, 0.12) 2px, transparent 3px);
+  background-size: 22px 22px;
+  border: 6px solid #5a4632;
+  border-radius: 6px;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 50px rgba(40, 10, 40, 0.45);
+}
+.pod-pendant {
+  position: absolute;
+  left: 70%;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.pod-pendant__wire { width: 2px; height: 28px; background: var(--ink); }
+.pod-pendant__bulbs { display: flex; gap: 9px; align-items: flex-start; }
+.pod-pendant__bulbs i {
+  width: 13px;
+  height: 17px;
+  border-radius: 50% 50% 40% 40%;
+  background: #ffe9a8;
+  box-shadow: 0 0 22px 9px rgba(255, 233, 168, 0.5);
+}
+.pod-pendant__bulbs i:nth-child(2) { width: 15px; height: 20px; }
+.pod-pendant__bulbs i:not(:nth-child(2)) { margin-top: 6px; }
+
+.pod-globe {
+  left: 28%;
+  top: 18%;
+  width: 46%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+.pod-globe__ball {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.35), transparent 40%), #2e5d8c;
+  box-shadow: inset -1.6cqw -1.9cqw 0 rgba(0, 0, 0, 0.28), 0 0 44px 12px rgba(255, 233, 168, 0.35);
+  outline: 3px dashed rgba(255, 246, 229, 0.5);
+  outline-offset: -10px;
+}
+.pod-globe__land {
+  position: absolute;
+  border-radius: 40% 60% 50% 45%;
+  outline: 2px dashed #8c6a48;
+  outline-offset: -5px;
+}
+.pod-globe__land--a { left: 20%; top: 18%; width: 42%; height: 30%; background: #e3c98f; }
+.pod-globe__land--b { left: 40%; top: 46%; width: 28%; height: 36%; background: #d9b978; border-radius: 45% 55% 60% 40%; }
+.pod-globe__land--c { left: 8%; top: 54%; width: 18%; height: 18%; background: #9bc46b; outline: none; }
+.pod-globe__pin {
+  position: absolute;
+  right: 12%;
+  top: 24%;
+  width: 11%;
+  height: 11%;
+  border-radius: 50%;
+  background: #e2553d;
+  outline: 2px dashed var(--cream);
+  outline-offset: -3px;
+}
+
+.pod-ask {
+  left: 3%;
+  top: 7%;
+  width: 20%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+.pod-ask__bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.12) 42%), rgba(255, 246, 229, 0.25);
+  border: 3px solid rgba(255, 246, 229, 0.9);
+}
+
+.pod-moon {
+  left: 77%;
+  top: 44%;
+  width: 19%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+.pod-moon__ball {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.3), transparent 40%), #b39a6e;
+  box-shadow: inset -0.7cqw -0.8cqw 0 rgba(0, 0, 0, 0.25);
+  outline: 2px dashed rgba(255, 246, 229, 0.5);
+  outline-offset: -6px;
+  animation-delay: -2s;
+}
+.pod-moon__ball i {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #8c7650;
+}
+
+/* The sill fills the bottom of the window: a felt Maryland crab and a plant. */
+.pod-sill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 13%;
+  background: #5a4632;
+  border-top: 4px solid #7a5f43;
+}
+.pod-crab {
+  position: absolute;
+  left: 8%;
+  bottom: 62%;
+  width: 18%;
+  aspect-ratio: 2 / 1;
+}
+.pod-crab__body {
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: 0;
+  height: 70%;
+  background: #c8432e;
+  border: 2px solid var(--ink);
+  border-radius: 50% 50% 30% 30%;
+  outline: 2px dashed rgba(255, 246, 229, 0.5);
+  outline-offset: -5px;
+}
+.pod-crab__claw {
+  position: absolute;
+  bottom: 40%;
+  width: 22%;
+  height: 44%;
+  background: #c8432e;
+  border: 2px solid var(--ink);
+  border-radius: 50% 50% 20% 50%;
+}
+.pod-crab__claw--l { left: 0; transform: rotate(-20deg); }
+.pod-crab__claw--r { right: 0; transform: scaleX(-1) rotate(-20deg); }
+.pod-crab__eye {
+  position: absolute;
+  top: -6%;
+  width: 10%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+}
+.pod-crab__eye--l { left: 36%; }
+.pod-crab__eye--r { right: 36%; }
+.pod-plant {
+  position: absolute;
+  right: 10%;
+  bottom: 62%;
+  width: 9%;
+  aspect-ratio: 1 / 1.4;
+}
+.pod-plant__pot {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 0;
+  height: 42%;
+  background: #b9643c;
+  border: 2px solid var(--ink);
+  border-radius: 2px 2px 8px 8px;
+}
+.pod-plant__leaf {
+  position: absolute;
+  bottom: 38%;
+  width: 44%;
+  height: 56%;
+  background: #4e8a3e;
+  border: 2px solid var(--ink);
+  border-radius: 50% 0 50% 0;
+}
+.pod-plant__leaf--a { left: 4%; transform: rotate(-12deg); }
+.pod-plant__leaf--b { right: 4%; transform: scaleX(-1) rotate(-12deg); }
+
+/* Floor: a carpet with a Maryland gold-and-black trim. */
+.pod-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 20%;
+  clip-path: polygon(14% 0, 86% 0, 100% 100%, 0 100%);
+  background: #7a3b4e radial-gradient(rgba(255, 246, 229, 0.06) 2px, transparent 3px) 0 0 / 18px 18px;
+}
+.pod-floor::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 10px;
+  background: repeating-linear-gradient(90deg, var(--gold) 0 18px, var(--night) 18px 36px);
+}
+
+/* Sits on the dark ceiling, on its own dark pill, so it reads anywhere. */
+.pod-welcome {
+  position: absolute;
+  left: 50%;
+  top: 2.4%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 80%;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: rgba(20, 14, 10, 0.82);
+  text-align: center;
+  z-index: 5;
+}
+.pod-welcome__title { font-size: clamp(16px, 1.7cqw, 24px); line-height: 1.15; color: var(--cream); }
+.pod-welcome__sub { margin-top: 2px; font-size: clamp(12px, 1cqw, 14px); font-weight: 700; color: var(--peach); }
+
+.pod-standee {
+  position: absolute;
+  left: 71%;
+  bottom: 4%;
+  width: 6.5%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 6;
+}
+.pod-standee img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border: 4px solid #fff;
+  border-radius: 40% 40% 10px 10px;
+  box-shadow: 0 0 0 3px var(--ink);
+  transform: rotate(4deg);
+}
+.pod-standee__neck { width: 30%; height: 12px; background: var(--card-dark); border: 2px solid var(--ink); border-top: 0; }
+.pod-standee__foot { width: 70%; height: 9px; background: var(--card-dark); border: 2px solid var(--ink); border-radius: 4px; }
+
+/* ---------- Console: the real navigation ---------- */
+
+.pod-console {
+  position: absolute;
+  left: 50%;
+  bottom: 2.5%;
+  transform: translateX(-50%);
+  width: min(520px, 38%);
+  z-index: 6;
+  box-sizing: border-box;
+  background: #2a2a2e;
+  border: 3px solid #0e0e10;
+  border-radius: 48px 48px 26px 26px;
+  box-shadow: 0 8px 0 #0e0e10, inset 0 4px 0 rgba(255, 255, 255, 0.08);
+  padding: 9px 14px 12px;
+}
+.pod-console__label {
+  margin: 0 0 7px;
+  text-align: center;
+  font-weight: 800;
+  font-size: clamp(10px, 0.85cqw, 12px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.pod-console__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.pod-console__btn {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 2px solid #0e0e10;
+  background: #3c3c42;
+  color: var(--cream);
+  font: 800 clamp(12px, 1cqw, 14px) 'Nunito', system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #0e0e10;
+}
+.pod-console__btn:hover { background: #4a4a52; }
+.pod-console__btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #0e0e10; }
+.pod-console__dot { flex-shrink: 0; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #0e0e10; }
+
+/* ---------- Footer ---------- */
+
+.pod-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 24px 18px;
+  font-size: 14px;
+}
+.pod-footer__links { display: flex; flex-wrap: wrap; gap: 16px; }
+.pod-footer a { color: var(--peach); font-weight: 800; text-decoration: underline; }
+
+/* ---------- Open world: the cardboard panel ---------- */
+
+.pod-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(20, 14, 10, 0.66);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.pod-dialog {
+  width: 100%;
+  max-width: 780px;
+  margin: auto 0;
+  box-sizing: border-box;
+  padding: 12px;
+  background: var(--card) repeating-linear-gradient(90deg, rgba(43, 30, 22, 0.05) 0 2px, transparent 2px 10px);
+  border: 4px solid var(--ink);
+  border-radius: 26px;
+  box-shadow: 10px 10px 0 var(--ink);
+  color: var(--ink);
+  font-family: 'Nunito', system-ui, sans-serif;
+}
+.pod-dialog__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  background: var(--cream);
+  border: 3px dashed var(--card-dark);
+  border-radius: 18px;
+}
+.pod-dialog__head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pod-dialog__title { font-size: clamp(28px, 4vw, 36px); line-height: 1; color: var(--ink); }
+.pod-close {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--gold);
+  color: var(--ink);
+  cursor: pointer;
+}
+.pod-dialog a { color: #8a2e1c; font-weight: 800; text-decoration: underline; }
+.pod-dialog a:hover { color: #5e1d10; }
+.pod-dialog :focus-visible { outline: 3px solid var(--plum); outline-offset: 3px; }
+
+.pod-stack { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+.pod-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.pod-lede { font-size: 16px; line-height: 1.55; color: var(--ink); }
+.pod-label { font-weight: 800; font-size: 14px; }
+.pod-textlink { align-self: flex-start; }
+
+.pod-photo-wide { width: 100%; height: 200px; object-fit: cover; border: 3px solid var(--ink); border-radius: 14px; }
+.pod-photo-round {
+  flex-shrink: 0;
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 6px solid #c9a04a;
+  box-shadow: 0 0 0 3px var(--ink);
+  transform: rotate(-4deg);
+}
+.pod-lifecard { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+.pod-lifecard > .pod-stack { flex: 1 1 300px; }
+
+.pod-dialog .pod-btn {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 20px;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font: 800 16px 'Nunito', system-ui, sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.pod-dialog .pod-btn--teal { background: var(--teal); color: var(--cream); }
+.pod-dialog .pod-btn--plum { background: var(--plum); color: var(--cream); }
+.pod-input {
+  flex: 1 1 240px;
+  min-height: 48px;
+  box-sizing: border-box;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  padding: 0 14px;
+  font: 16px 'Nunito', system-ui, sans-serif;
+  color: var(--ink);
+  background: #fff;
+}
+.pod-chip {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--peach);
+  color: var(--ink);
+  font: 700 14px 'Nunito', system-ui, sans-serif;
+  cursor: pointer;
+}
+.pod-chip:nth-child(3n + 1) { background: var(--gold); }
+.pod-chip:nth-child(3n + 3) { background: var(--cream); }
+
+.pod-levels { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pod-dialog .pod-level {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--peach);
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 var(--ink);
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 400;
+}
+.pod-dialog a.pod-level:hover { background: #f7d6b5; color: var(--ink); }
+.pod-level--static { box-shadow: none; }
+.pod-level__num {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--red);
+  color: var(--cream);
+  font-family: 'Bagel Fat One', 'Nunito', system-ui, sans-serif;
+  font-size: 17px;
+  outline: 2px dashed rgba(255, 246, 229, 0.6);
+  outline-offset: -6px;
+}
+.pod-level__num--side { background: var(--teal); }
+.pod-level__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pod-level__meta { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #5a3a22; }
+.pod-level__title { font-size: 17px; font-weight: 800; }
+.pod-level__desc { font-size: 14px; line-height: 1.4; color: #4a3020; }
+
+.pod-stickers { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.pod-sticker { border: 2px solid var(--ink); border-radius: 999px; padding: 5px 12px; font-weight: 700; font-size: 14px; }
+.pod-sticker--gold { background: var(--gold); transform: rotate(-2deg); }
+.pod-sticker--teal { background: var(--teal); color: var(--cream); transform: rotate(2deg); }
+.pod-sticker--red { background: var(--red); color: var(--cream); transform: rotate(-1deg); }
+.pod-sticker--peach { background: var(--peach); transform: rotate(3deg); }
+
+.pod-cards { display: flex; flex-wrap: wrap; gap: 14px; }
+.pod-card {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+}
+.pod-card--gold { background: var(--gold); transform: rotate(-1deg); }
+.pod-card--peach { background: var(--peach); transform: rotate(1deg); }
+.pod-card__meta { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #4a3020; }
+.pod-card__title { font-size: 18px; font-weight: 800; color: var(--ink); }
+.pod-card__desc { font-size: 15px; line-height: 1.45; color: var(--ink); }
+.pod-dialog .pod-card--gold a { color: var(--ink); }
+.pod-dialog .pod-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 400;
+  color: var(--ink);
+}
+.pod-dialog .pod-note:hover { background: #fffbf3; color: var(--ink); }
+
+/* ---------- Phones ----------
+   The side windows, posts and standee drop away; the centre window
+   widens; the console is the navigation, so the header list hides. */
+
+@media (max-width: 760px) {
+  .pod { --header-h: 64px; }
+  .pod-header__nav { display: none; }
+  .pod-brand__role { font-size: 13px; }
+  .pod-scene { width: 100%; min-width: 0; aspect-ratio: 3 / 4.2; }
+  .pod-wings, .pod-post, .pod-standee, .pod-ceiling__rib { display: none; }
+  .pod-arch { left: 2%; width: 96%; top: 14%; bottom: 30%; }
+  .pod-window { left: 6%; width: 88%; top: 26%; bottom: 33%; }
+  .pod-globe { left: 25%; top: 8%; width: 46%; }
+  .pod-ask { left: 4%; top: 12%; width: 20%; }
+  .pod-moon { left: 76%; top: 28%; width: 19%; }
+  .pod-floor { height: 30%; clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); }
+  .pod-console { width: 92%; bottom: 3%; }
+  .pod-welcome { top: 2%; max-width: 90%; padding: 6px 14px; }
+  /* index.css sizes every h1 for the article screens; the pod's is a sign, not a headline. */
+  .pod .pod-welcome__title { font-size: 18px !important; letter-spacing: 0 !important; line-height: 1.15 !important; }
+  .pod-plant { display: none; }
+  .pod-header .pod-navbtn--dashed { min-height: 40px; font-size: 13px; }
+  .pod-footer { padding: 4px 16px 18px; }
+}
