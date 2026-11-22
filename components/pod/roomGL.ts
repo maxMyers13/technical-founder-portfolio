@@ -1247,7 +1247,7 @@ export function startPodRoom(
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
   gl.bindVertexArray(null);
 
-  const portrait = loadTexture(gl, '/assets/max-portrait.jpeg');
+  const portrait = loadTexture(gl, '/assets/photos/microsoft-campus.jpg');
   const track = loadTexture(gl, '/assets/photos/track-race.jpg');
   const stage = loadTexture(gl, '/assets/photos/on-stage-conference.jpg');
   const standeeTex = loadTexture(gl, '/assets/photos/yc-startup-school.jpg');
@@ -1360,19 +1360,46 @@ export function startPodRoom(
   const trackAt = leftAt(2.0, 0.3);
   const medalAt = leftAt(1.05, 0.12);
   const stageAt = onWing(right, -0.14, 0.3);
-  const ribbon = along(medalAt, 0.02);
-  const ribbonTop = { ...along(medalAt, 0.018), y: medalAt.y + 0.1 };
-  const medal = along(medalAt, 0.03);
+  type RGB = [number, number, number];
+  /**
+   * A medal hung on a wall pin, the way a real one hangs: the ribbon is a loop over the pin, so its two strips meet
+   * at the top and spread to the jump ring; the medal is struck metal, a thick disc with a raised centre.
+   */
+  const hungMedal = (at: Spot, cloth: RGB, stripe: RGB, metalTint: RGB, r: number): Draw[] => {
+    const lat = (dx: number, dy: number, depth: number) => {
+      const q = along(at, depth);
+      return { x: q.x + Math.cos(at.ry) * dx, y: at.y + dy, z: q.z - Math.sin(at.ry) * dx };
+    };
+    const pinY = 0.15, ringY = -0.01, spread = 0.03;
+    const len = Math.hypot(spread / 2, pinY - ringY);
+    const lean = Math.atan2(spread / 2, pinY - ringY);
+    const out: Draw[] = [];
+    for (const side of [-1, 1]) {
+      const m = lat((side * spread) / 4, (pinY + ringY) / 2, 0.01);
+      const f = lat((side * spread) / 4, (pinY + ringY) / 2, 0.0125);
+      out.push(
+        D(box, 1, cloth, m.x, m.y, m.z, 0.028, len, 0.002, { ry: at.ry, rz: side * lean, rough: 0.85, wrap: 0.3 }),
+        D(box, 1, stripe, f.x, f.y, f.z, 0.008, len, 0.001, { ry: at.ry, rz: side * lean, rough: 0.85, wrap: 0.3 }),
+      );
+    }
+    const pin = lat(0, pinY + 0.004, 0.008);
+    const ring = lat(0, ringY - 0.004, 0.012);
+    const disc = lat(0, ringY - 0.008 - r, 0.016);
+    const face = lat(0, ringY - 0.008 - r, 0.019);
+    out.push(
+      D(ball, 2, [0.7, 0.7, 0.72], pin.x, pin.y, pin.z, 0.006, 0.006, 0.006, { metal: 1, rough: 0.3 }),
+      D(tube, 2, metalTint, ring.x, ring.y, ring.z, 0.012, 0.004, 0.012, { ry: at.ry, rz: Math.PI / 2, metal: 1, rough: 0.3 }),
+      D(ball, 2, metalTint, disc.x, disc.y, disc.z, r, r, 0.008, { ry: at.ry, metal: 1, rough: 0.28 }),
+      D(ball, 2, metalTint.map((v) => v * 0.86) as RGB, face.x, face.y, face.z, r * 0.62, r * 0.62, 0.007, { ry: at.ry, metal: 1, rough: 0.42 }),
+    );
+    return out;
+  };
   const artifacts: Draw[] = [
-    // Life: the portrait (1400x1276) and the track photo (1284x1610), each framed
-    ...framed(portraitAt, 0.36, 0.33, portrait, { anchor: 'life', anchorDy: -0.3 }),
+    // Life: Max at the Microsoft sign in Redmond (1400x1050) and the track photo (1284x1610), each framed
+    ...framed(portraitAt, 0.36, 0.27, portrait, { anchor: 'life', anchorDy: -0.27 }),
     ...framed(trackAt, 0.2, 0.25, track, {}, [0.16, 0.13, 0.11]),
-    // a D1 track medal on a red and gold ribbon, hung from a pin
-    D(box, 2, [0.72, 0.13, 0.1], ribbon.x - Math.cos(medalAt.ry) * 0.022, ribbon.y + 0.06, ribbon.z + Math.sin(medalAt.ry) * 0.022, 0.034, 0.15, 0.004, { ry: medalAt.ry, rz: 0.24, rough: 0.9 }),
-    D(box, 2, [0.86, 0.64, 0.18], ribbon.x + Math.cos(medalAt.ry) * 0.022, ribbon.y + 0.06, ribbon.z - Math.sin(medalAt.ry) * 0.022, 0.034, 0.15, 0.004, { ry: medalAt.ry, rz: -0.24, rough: 0.9 }),
-    D(ball, 2, [0.75, 0.72, 0.68], ribbonTop.x, ribbonTop.y + 0.035, ribbonTop.z, 0.012, 0.012, 0.012, { rough: 0.2 }),
-    D(coin, 4, [0.93, 0.7, 0.24], medal.x, medal.y - 0.03, medal.z, 0.11, 0.11, 1, { ry: medalAt.ry, rough: 0.18 }),
-    D(coin, 4, [0.78, 0.55, 0.16], along(medalAt, 0.032).x, medal.y - 0.03, along(medalAt, 0.032).z, 0.07, 0.07, 1, { ry: medalAt.ry, rough: 0.3 }),
+    // a D1 track medal: gold, on a red ribbon with a gold stripe
+    ...hungMedal(medalAt, [0.62, 0.1, 0.09], [0.86, 0.64, 0.18], [1.0, 0.76, 0.34], 0.04),
     // Speaking: the stage photo (1600x1066), framed
     ...framed(stageAt, 0.22, 0.33, standeeTex, { anchor: 'speaking', anchorDy: -0.12 }), // YC Startup School (1067x1600, portrait)
   ];
@@ -1887,11 +1914,8 @@ export function startPodRoom(
     );
   }
   const m2 = leftAt(1.17, 0.11);
-  const m2r = along(m2, 0.02);
-  add(
-    D(box, 2, [0.12, 0.25, 0.6], m2r.x, m2r.y + 0.06, m2r.z, 0.03, 0.14, 0.004, { ry: m2.ry, rz: 0.1, rough: 0.9 }),
-    D(coin, 4, [0.75, 0.76, 0.8], along(m2, 0.03).x, m2.y - 0.03, along(m2, 0.03).z, 0.1, 0.1, 1, { ry: m2.ry, rough: 0.16 }),
-  );
+  // the marathon finisher's medal: silver, on a navy ribbon with a white stripe
+  add(...hungMedal(m2, [0.1, 0.18, 0.42], [0.9, 0.9, 0.92], [0.84, 0.86, 0.9], 0.036));
   const bibTex = paintTex(() => P.raceBib());
   const bibAt = along(leftAt(2.05, 0.6), 0.004);
   add(D(box, 2, [1, 1, 1], bibAt.x, bibAt.y, bibAt.z, 0.12, 0.09, 0.002, { ry: left.ry, rz: 0.05, tex: bibTex, rough: 0.9 }));
@@ -2200,9 +2224,10 @@ export function startPodRoom(
     onDesk('mx-master', kbX + 0.135, 0.075, 0.1, matLift);
     const pad = onDesk('macro-pad', 0.015, 0.075, 0.12);
     const studio = onDesk('echo-studio', pcX + 0.165, 0.05);
-    const sw = onDesk('switch-oled', 0.685, -0.115, -0.25);
+    // the docked Switch sits in the open, between the monitors and the laptop; the router hides behind the laptop
+    const sw = onDesk('switch-oled', 0.44, -0.1, -0.15);
     const gc = onDesk('gc-controller', -0.215, 0.085, 0.3);
-    const orbi = onDesk('orbi-router', 0.44, -0.115, -0.15);
+    const orbi = onDesk('orbi-router', 0.70, -0.13, -0.25);
     // the rolling whiteboard stands in the front-left corner, beside the PC end of the desk, clear of the controller
     const wb = { x: o.x - c0 * 0.62 + s0 * 0.55, z: o.z + s0 * 0.62 + c0 * 0.55 };
     add(...prop('whiteboard', wb.x, floorY, wb.z, deskYaw - 0.2));
@@ -2479,6 +2504,26 @@ export function startPodRoom(
     }
   }
 
+  // The pendant: one round paper lantern (a chochin) hung on a cord inside the gate, lit from within. The paper glows
+  // warm but not white, black lacquer caps close it top and bottom, and bamboo ribs ring it.
+  const lantern: Draw[] = [];
+  {
+    const L = { x: 0.3, y: 0.64, z: 0.32 };
+    const rx = 0.07, ry = 0.085;
+    const RIB: [number, number, number] = [0.16, 0.09, 0.05];
+    lantern.push(
+      D(box, 2, [0.08, 0.07, 0.07], L.x, L.y + ry + 0.25, L.z, 0.004, 0.5, 0.004, { rough: 0.8 }), // the cord
+      D(ball, 5, [0.42, 0.22, 0.1], L.x, L.y, L.z, rx, ry, rx), // runs hot (x emissive): this lands as warm paper, not white
+      D(tube, 2, [0.06, 0.05, 0.05], L.x, L.y + ry - 0.004, L.z, rx * 1.0, 0.016, rx * 1.0, { rough: 0.35 }),
+      D(tube, 2, [0.06, 0.05, 0.05], L.x, L.y - ry + 0.004, L.z, rx * 1.0, 0.016, rx * 1.0, { rough: 0.35 }),
+    );
+    for (const t of [-0.66, -0.33, 0, 0.33, 0.66]) {
+      const y = t * ry;
+      const rr = rx * Math.sqrt(1 - t * t) * 2 + 0.004;
+      lantern.push(D(tube, 2, RIB, L.x, L.y + y, L.z, rr, 0.003, rr, { rough: 0.7 }));
+    }
+  }
+
   const draws: Draw[] = [
     D(box, 7, [0.16, 0.18, 0.32], 0, 0.15, -0.85, 7.2, 2.6, 0.04, { rough: 1, wrap: 0.4 }), // wide enough that no void shows past the side walls
     D(box, 7, [0.18, 0.2, 0.36], leftBig.x, leftBig.y, leftBig.z, leftBig.sx, leftBig.sy, leftBig.sz, { ry: leftBig.ry, rough: 1 }),
@@ -2488,9 +2533,7 @@ export function startPodRoom(
     D(box, 1, [0.55, 0.32, 0.48], 0, 0.05, 0.02, 0.98, 1.18, 0.03, { wrap: 0.65, rough: 1 }),
     D(rug, 6, [0.48, 0.2, 0.28], -0.3, -0.78, 0.55, 4.9, 1, 1.9, { rough: 1, wrap: 0.45 }),
     D(box, 2, [0.085, 0.07, 0.075], 0, -0.42, 0.34, 0.92, 0.06, 0.08, { rough: 0.7 }), // the shrine's sill, in the same black timber
-    D(ball, 5, [1, 0.93, 0.7], 0.22, 0.62, 0.32, 0.045, 0.055, 0.045),
-    D(ball, 5, [1, 0.93, 0.7], 0.3, 0.66, 0.32, 0.05, 0.06, 0.05),
-    D(ball, 5, [1, 0.93, 0.7], 0.38, 0.62, 0.32, 0.045, 0.055, 0.045),
+    ...lantern,
     ...artifacts,
     ...room,
     D(ball, 8, [0.2, 0.38, 0.58], -0.02, 0.16, 0.4, 0.2, 0.2, 0.2, {
@@ -2791,6 +2834,7 @@ export function startPodRoom(
   const drawScene = (prog: 'beauty' | 'shadow' | 'glow', time: number) => {
     for (const d of draws) {
       if (!!d.wisp !== (prog === 'glow')) continue;
+      if (prog === 'shadow' && d.kind === 5) continue; // a light source doesn't cast its own shadow
       const model = modelOf(d, time);
       if (prog === 'shadow') {
         gl.uniformMatrix4fv(sModel, false, model);
@@ -3070,7 +3114,7 @@ export function startPodRoom(
       tex(0, bloom[0].tex);
       gl.uniform1i(U(rays, 'uSrc'), 0);
       gl.uniform2fv(U(rays, 'uLights'), [...pendant, ...sconceA, ...sconceB]);
-      gl.uniform1fv(U(rays, 'uLightPower'), [1.6, 0.9, 0.9]);
+      gl.uniform1fv(U(rays, 'uLightPower'), [0.9, 0.9, 0.9]);
       gl.uniform1f(U(rays, 'uJitter'), calm ? 0 : fract(time) * 50);
     });
 

@@ -817,34 +817,173 @@ export function pathionDesktop(logo: HTMLImageElement | null, w = 1280, h = 720)
 }
 
 /** The LG C3 48" on the wall: Smash night, four players ready. An original screen, no game art. */
+/**
+ * The TV: a Smash Ultimate versus card, Cloud vs Sephiroth, the way the match-up thumbnails look: red on the left,
+ * blue on the right, split on a slant, a brushed red "VS" in the middle and embers in the air. The fighters are
+ * original silhouettes with rim light (a spiky-haired swordsman with a broad blade, a long-haired one with a very long
+ * katana), not copies of the character art.
+ */
 export function smashNight(w = 1280, h = 720) {
   const { c, g } = make(w, h);
-  const bg = g.createRadialGradient(w / 2, h * 0.45, 20, w / 2, h / 2, w * 0.7);
-  bg.addColorStop(0, '#3b1b6b');
-  bg.addColorStop(1, '#0a0614');
-  g.fillStyle = bg;
+  const r = rng(77);
+  const bar = h * 0.07; // letterbox
+  // left: red, hot in the middle
+  const red = g.createRadialGradient(w * 0.25, h * 0.45, 10, w * 0.25, h * 0.5, w * 0.55);
+  red.addColorStop(0, '#e0392b');
+  red.addColorStop(1, '#5a0a0c');
+  g.fillStyle = red;
   g.fillRect(0, 0, w, h);
-  g.textAlign = 'center';
-  g.fillStyle = '#ffd23f';
-  g.font = `900 ${h * 0.16}px ${DISPLAY}`;
-  g.fillText('SMASH NIGHT', w / 2, h * 0.38);
-  g.fillStyle = '#f2f2f4';
-  g.font = `800 ${h * 0.05}px ${BODY}`;
-  g.fillText('999+ HOURS · 4 PLAYERS READY', w / 2, h * 0.5);
-  const cols = ['#e0312a', '#2f7ff0', '#f2c230', '#3ec28f'];
-  cols.forEach((col, i) => {
-    const x = w * (0.2 + i * 0.2);
-    g.fillStyle = col;
+  // right: blue, split from the red on a slant
+  g.save();
+  g.beginPath();
+  g.moveTo(w * 0.56, 0);
+  g.lineTo(w, 0);
+  g.lineTo(w, h);
+  g.lineTo(w * 0.44, h);
+  g.closePath();
+  g.clip();
+  const blue = g.createRadialGradient(w * 0.75, h * 0.45, 10, w * 0.75, h * 0.5, w * 0.55);
+  blue.addColorStop(0, '#2f78c8');
+  blue.addColorStop(1, '#0a1838');
+  g.fillStyle = blue;
+  g.fillRect(0, 0, w, h);
+  g.restore();
+  // the seam: a pale slash
+  g.strokeStyle = 'rgba(255,240,220,0.85)';
+  g.lineWidth = 6;
+  g.beginPath();
+  g.moveTo(w * 0.56, 0);
+  g.lineTo(w * 0.44, h);
+  g.stroke();
+
+  const fighter = (draw: () => void, rim: string) => {
+    g.save();
+    g.shadowColor = rim;
+    g.shadowBlur = 18;
+    g.fillStyle = '#140d10';
     g.beginPath();
-    g.roundRect(x - 90, h * 0.62, 180, h * 0.22, 18);
+    draw();
     g.fill();
-    g.fillStyle = '#0a0614';
-    g.font = `900 ${h * 0.07}px ${DISPLAY}`;
-    g.fillText(`P${i + 1}`, x, h * 0.73);
-    g.font = `800 ${h * 0.035}px ${BODY}`;
-    g.fillText('READY', x, h * 0.8);
-    g.fillStyle = col;
-  });
+    g.shadowBlur = 0;
+    g.strokeStyle = rim;
+    g.lineWidth = 3;
+    g.stroke();
+    g.restore();
+  };
+  // left fighter: spiky hair, a pauldron on one shoulder, a broad blade held up behind him
+  fighter(() => {
+    g.moveTo(w * 0.05, h);
+    g.lineTo(w * 0.08, h * 0.72);
+    g.quadraticCurveTo(w * 0.12, h * 0.6, w * 0.2, h * 0.6);
+    g.lineTo(w * 0.24, h * 0.56);
+    g.lineTo(w * 0.33, h * 0.6);
+    g.quadraticCurveTo(w * 0.38, h * 0.66, w * 0.38, h);
+    g.closePath();
+    const hx = w * 0.235, hy = h * 0.42;
+    g.moveTo(hx + h * 0.09, hy);
+    g.ellipse(hx, hy, h * 0.085, h * 0.105, 0, 0, Math.PI * 2);
+    // spikes
+    // a mass of hair swept up and back, broken into big spikes, wider than the head
+    const spikes = [[-0.24, 0.02], [-0.25, -0.12], [-0.17, -0.24], [-0.05, -0.3], [0.07, -0.26], [0.17, -0.17], [0.22, -0.04]];
+    g.moveTo(hx - h * 0.09, hy + h * 0.02);
+    for (const [dx, dy] of spikes) {
+      g.lineTo(hx + dx * h, hy + dy * h);
+      g.lineTo(hx + dx * h * 0.62, hy + dy * h * 0.62 - h * 0.02);
+    }
+    g.lineTo(hx + h * 0.09, hy - h * 0.02);
+    g.closePath();
+    // pauldron
+    g.moveTo(w * 0.33 + h * 0.07, h * 0.6);
+    g.ellipse(w * 0.32, h * 0.6, h * 0.075, h * 0.05, -0.3, 0, Math.PI * 2);
+    // the broad blade, rising from behind the shoulder
+    g.moveTo(w * 0.34, h * 0.66);
+    g.lineTo(w * 0.36, h * 0.62);
+    g.lineTo(w * 0.42, h * 0.08);
+    g.lineTo(w * 0.465, h * 0.1);
+    g.lineTo(w * 0.4, h * 0.66);
+    g.closePath();
+  }, '#ffb347');
+  // right fighter: long hair falling past the shoulders, a high collar, a very long thin blade across the frame
+  fighter(() => {
+    const hx = w * 0.77, hy = h * 0.4;
+    g.moveTo(w * 0.6, h);
+    g.quadraticCurveTo(w * 0.62, h * 0.62, w * 0.7, h * 0.58);
+    g.lineTo(w * 0.84, h * 0.58);
+    g.quadraticCurveTo(w * 0.93, h * 0.62, w * 0.96, h);
+    g.closePath();
+    // hair: a long fall from the crown down past the shoulders
+    g.moveTo(hx - h * 0.1, hy - h * 0.05);
+    g.quadraticCurveTo(hx - h * 0.02, hy - h * 0.2, hx + h * 0.1, hy - h * 0.06);
+    g.quadraticCurveTo(hx + h * 0.2, hy + h * 0.3, hx + h * 0.24, hy + h * 0.55);
+    g.lineTo(hx + h * 0.1, hy + h * 0.5);
+    g.lineTo(hx - h * 0.12, hy + h * 0.52);
+    g.quadraticCurveTo(hx - h * 0.18, hy + h * 0.2, hx - h * 0.1, hy - h * 0.05);
+    g.closePath();
+    // collar
+    g.moveTo(hx - h * 0.12, h * 0.58);
+    g.lineTo(hx - h * 0.06, h * 0.5);
+    g.lineTo(hx + h * 0.08, h * 0.5);
+    g.lineTo(hx + h * 0.14, h * 0.58);
+    g.closePath();
+  }, '#8fd8ff');
+  // the long katana: a thin line from lower right up to the far left
+  g.save();
+  g.strokeStyle = '#dfe8f0';
+  g.shadowColor = '#bfe6ff';
+  g.shadowBlur = 14;
+  g.lineWidth = 5;
+  g.beginPath();
+  g.moveTo(w * 0.88, h * 0.84);
+  g.lineTo(w * 0.52, h * 0.2);
+  g.stroke();
+  g.restore();
+
+  // embers drifting up
+  for (let i = 0; i < 90; i++) {
+    const x = r() * w, y = bar + r() * (h - 2 * bar), s = 1 + r() * 3.5;
+    g.fillStyle = `rgba(255,${140 + Math.floor(r() * 80)},60,${0.35 + r() * 0.6})`;
+    g.beginPath();
+    g.arc(x, y, s, 0, Math.PI * 2);
+    g.fill();
+  }
+
+  // the brushed VS: red, outlined in white, leaning forward
+  g.save();
+  g.translate(w * 0.5, h * 0.55);
+  g.rotate(-0.12);
+  g.transform(1, 0, -0.25, 1, 0, 0);
+  g.font = `900 ${h * 0.42}px ${DISPLAY}`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.lineJoin = 'round';
+  g.lineWidth = h * 0.035;
+  g.strokeStyle = '#ffffff';
+  g.strokeText('VS', 0, 0);
+  const vs = g.createLinearGradient(0, -h * 0.2, 0, h * 0.2);
+  vs.addColorStop(0, '#ffd23f');
+  vs.addColorStop(0.35, '#e8231b');
+  vs.addColorStop(1, '#8a0a0a');
+  g.fillStyle = vs;
+  g.fillText('VS', 0, 0);
+  g.restore();
+
+  // names
+  g.textBaseline = 'alphabetic';
+  g.font = `900 ${h * 0.07}px ${DISPLAY}`;
+  g.lineWidth = 6;
+  g.strokeStyle = '#140d10';
+  g.fillStyle = '#ffffff';
+  g.textAlign = 'left';
+  g.strokeText('CLOUD', w * 0.04, h - bar - h * 0.04);
+  g.fillText('CLOUD', w * 0.04, h - bar - h * 0.04);
+  g.textAlign = 'right';
+  g.strokeText('SEPHIROTH', w * 0.96, h - bar - h * 0.04);
+  g.fillText('SEPHIROTH', w * 0.96, h - bar - h * 0.04);
+
+  // letterbox bars
+  g.fillStyle = '#000';
+  g.fillRect(0, 0, w, bar);
+  g.fillRect(0, h - bar, w, bar);
   return c;
 }
 
