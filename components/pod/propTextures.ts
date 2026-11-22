@@ -1675,3 +1675,139 @@ export function whiteboard(w = 1208, h = 1728) {
   write('– tips to be successful @ internship or FT job', 80, 1680, 40);
   return c;
 }
+
+/**
+ * A manga-style panel for the wall: SOUL RESONANCE. Three tall slices inked in black and white (angel, hero,
+ * hope) with the two words running down the seams. Original art in symbols (a halo, a flame, a rising star),
+ * a nod to Fire Force and Soul Eater with no characters drawn.
+ */
+export function soulTriptych(w = 800, h = 1000) {
+  const { c, g } = make(w, h);
+  g.fillStyle = '#0b0b0d';
+  g.fillRect(0, 0, w, h);
+  const gap = w * 0.008;
+  const pw = (w - gap * 2) / 3;
+  const r = rng(31);
+  const panel = (i: number, draw: (x: number, cx: number) => void) => {
+    const x = i * (pw + gap);
+    g.save();
+    g.beginPath();
+    g.rect(x, 0, pw, h);
+    g.clip();
+    draw(x, x + pw / 2);
+    g.restore();
+  };
+  const word = (text: string, x: number, y: number, size: number, fill: string, stroke: string, vertical: boolean) => {
+    g.font = `900 ${size}px 'Arial Black', Impact, 'Helvetica Neue', sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineWidth = size * 0.16;
+    g.lineJoin = 'round';
+    g.strokeStyle = stroke;
+    g.fillStyle = fill;
+    const chars = vertical ? [...text] : [text];
+    chars.forEach((ch, k) => {
+      g.strokeText(ch, x, y + k * size * 1.05);
+      g.fillText(ch, x, y + k * size * 1.05);
+    });
+  };
+  const flames = (x: number, cols: string[], seed: number, base: number) => {
+    const q = rng(seed);
+    cols.forEach((col, layer) => {
+      g.fillStyle = col;
+      g.beginPath();
+      g.moveTo(x, h);
+      const n = 7;
+      for (let k = 0; k <= n; k++) {
+        const fx = x + (k / n) * pw;
+        const top = h * (base + layer * 0.16 + q() * 0.2);
+        g.quadraticCurveTo(fx - pw / n / 2, top - h * 0.12 * q(), fx, top + h * 0.1);
+      }
+      g.lineTo(x + pw, h);
+      g.closePath();
+      g.fill();
+    });
+  };
+  // angel: pale light, a halo and two soft wings
+  panel(0, (x, cx) => {
+    const bg = g.createLinearGradient(x, 0, x, h);
+    bg.addColorStop(0, '#fbf6ea');
+    bg.addColorStop(1, '#f1c9b4');
+    g.fillStyle = bg;
+    g.fillRect(x, 0, pw, h);
+    for (const side of [-1, 1]) {
+      for (let k = 0; k < 6; k++) {
+        g.fillStyle = `rgba(255, 255, 255, ${0.95 - k * 0.08})`;
+        g.beginPath();
+        g.ellipse(cx + side * pw * (0.14 + k * 0.045), h * (0.6 + k * 0.035), pw * 0.07, h * (0.2 - k * 0.018), side * (0.5 + k * 0.12), 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = 'rgba(190, 150, 130, 0.5)';
+        g.lineWidth = 2;
+        g.stroke();
+      }
+    }
+    g.strokeStyle = '#f0b93c';
+    g.lineWidth = h * 0.022;
+    g.beginPath();
+    g.ellipse(cx, h * 0.3, pw * 0.19, h * 0.045, 0, 0, Math.PI * 2);
+    g.stroke();
+    g.fillStyle = '#ff5fa2';
+    for (const side of [-1, 1]) {
+      g.beginPath();
+      g.arc(cx + side * pw * 0.11, h * 0.5, h * 0.035, 0, Math.PI * 2);
+      g.fill();
+    }
+  });
+  // hero: night, embers and one tall flame
+  panel(1, (x, cx) => {
+    g.fillStyle = '#14110f';
+    g.fillRect(x, 0, pw, h);
+    flames(x, ['#b3260f', '#f0641a', '#ffc23d'], 5, 0.42);
+    g.fillStyle = '#fff3c4';
+    g.beginPath();
+    g.moveTo(cx, h * 0.3);
+    g.quadraticCurveTo(cx + pw * 0.2, h * 0.62, cx, h * 0.8);
+    g.quadraticCurveTo(cx - pw * 0.2, h * 0.62, cx, h * 0.3);
+    g.fill();
+    for (let k = 0; k < 40; k++) {
+      g.fillStyle = `rgba(255, 190, 90, ${0.3 + r() * 0.7})`;
+      g.beginPath();
+      g.arc(x + r() * pw, r() * h * 0.6, 1.5 + r() * 3, 0, Math.PI * 2);
+      g.fill();
+    }
+  });
+  // hope: green-gold fire and a star rising out of the dark
+  panel(2, (x, cx) => {
+    g.fillStyle = '#f4f08a';
+    g.fillRect(x, 0, pw, h);
+    flames(x, ['#d6e24a', '#8fbf2c'], 9, 0.1);
+    g.fillStyle = '#17120c';
+    g.beginPath();
+    g.ellipse(cx, h * 1.02, pw * 0.62, h * 0.62, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#fff7cf';
+    g.beginPath();
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2 - Math.PI / 2;
+      const rad = k % 2 ? h * 0.035 : h * 0.13;
+      g.lineTo(cx + Math.cos(a) * rad, h * 0.62 + Math.sin(a) * rad);
+    }
+    g.closePath();
+    g.fill();
+  });
+  // ink it: black and white with a few flat greys, like a manga page
+  const img = g.getImageData(0, 0, w, h);
+  for (let k = 0; k < img.data.length; k += 4) {
+    const l = (img.data[k] * 0.3 + img.data[k + 1] * 0.59 + img.data[k + 2] * 0.11) / 255;
+    const v = l > 0.8 ? 255 : l > 0.55 ? 200 : l > 0.3 ? 110 : 16;
+    img.data[k] = img.data[k + 1] = img.data[k + 2] = v;
+  }
+  g.putImageData(img, 0, 0);
+  // the words run down the two seams between the panels
+  g.fillStyle = '#0b0b0d';
+  g.fillRect(pw, 0, gap, h);
+  g.fillRect(pw * 2 + gap, 0, gap, h);
+  word('RESONANCE', pw + gap / 2, h * 0.09, h * 0.095, '#0b0b0d', '#ffffff', true);
+  word('SOUL', pw * 2 + gap * 1.5, h * 0.34, h * 0.095, '#0b0b0d', '#ffffff', true);
+  return c;
+}

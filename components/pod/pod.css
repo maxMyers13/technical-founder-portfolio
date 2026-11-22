@@ -1391,3 +1391,147 @@
 /* zoomed in to an area: drag to look around it */
 .pod-scene--zoomed .pod-room { cursor: grab; touch-action: none; }
 .pod-scene--dragging, .pod-scene--dragging .pod-room { cursor: grabbing; user-select: none; }
+
+/* ---------- Phones, with the rendered room ----------
+   The room fills the screen edge to edge, the way it does on a desktop. The header floats on a soft gradient, the
+   console becomes a dock of chips along the bottom (swipe it sideways), and a sideways swipe on the room looks along
+   it. Sections open as a bottom sheet with a sticky title and close button, and scroll inside the sheet. */
+.pod-console__gl { display: none; }
+@media (max-width: 760px) {
+  .pod:has(.pod-scene--gl) .pod-stage { padding: 0; }
+  .pod:has(.pod-scene--gl) .pod-scene {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100svh;
+    min-width: 0;
+    aspect-ratio: auto;
+    border-radius: 0;
+    z-index: 0;
+  }
+  .pod:has(.pod-scene--gl) .pod-room { touch-action: none; }
+  .pod:has(.pod-scene--gl) .pod-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding: calc(10px + env(safe-area-inset-top)) 14px 30px;
+    background: linear-gradient(rgba(20, 14, 10, 0.86), rgba(20, 14, 10, 0));
+    pointer-events: none;
+  }
+  .pod:has(.pod-scene--gl) .pod-header > * { pointer-events: auto; }
+  .pod:has(.pod-scene--gl) .pod-brand { flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+  .pod:has(.pod-scene--gl) .pod-brand__name { font-size: 22px; }
+  .pod:has(.pod-scene--gl) .pod-brand__role { font-size: 12px; line-height: 1.3; }
+  .pod:has(.pod-scene--gl) .pod-header .pod-navbtn--dashed {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 12px;
+    white-space: nowrap;
+    background: rgba(20, 14, 10, 0.5);
+    backdrop-filter: blur(6px);
+  }
+  .pod:has(.pod-scene--gl) .pod-header .pod-navbtn--dashed[aria-pressed='true'] { background: var(--cream); color: var(--night); }
+  .pod:has(.pod-scene--gl) .pod-footer { display: none; }
+
+  .pod:has(.pod-scene--gl) .pod-console {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: none;
+    width: auto;
+    z-index: 20;
+    padding: 34px 0 calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(rgba(20, 14, 10, 0), rgba(20, 14, 10, 0.9) 45%);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .pod:has(.pod-scene--gl) .pod-console__flat { display: none; }
+  .pod:has(.pod-scene--gl) .pod-console__gl { display: inline; }
+  .pod:has(.pod-scene--gl) .pod-console__label {
+    margin: 0 0 9px;
+    padding: 0 16px;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--peach);
+  }
+  .pod:has(.pod-scene--gl) .pod-console__grid {
+    display: flex;
+    gap: 8px;
+    padding: 0 14px 4px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-padding: 0 14px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pod:has(.pod-scene--gl) .pod-console__grid::-webkit-scrollbar { display: none; }
+  .pod:has(.pod-scene--gl) .pod-console__grid li { flex: 0 0 auto; scroll-snap-align: start; }
+  .pod:has(.pod-scene--gl) .pod-console__btn {
+    min-height: 46px;
+    padding: 0 16px 0 12px;
+    font-size: 15px;
+    white-space: nowrap;
+    background: rgba(60, 60, 66, 0.94);
+    border-color: rgba(14, 14, 16, 0.9);
+  }
+  .pod:has(.pod-scene--gl) .pod-welcome { bottom: calc(118px + env(safe-area-inset-bottom)) !important; padding: 6px 14px; }
+  .pod:has(.pod-scene--gl) .pod-welcome__sub { display: none; }
+  .pod:has(.pod-scene--gl) .pod-back { top: calc(72px + env(safe-area-inset-top)); left: 14px; }
+
+  /* sections: a bottom sheet */
+  .pod-overlay,
+  .pod-overlay--side {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding: 0;
+    pointer-events: auto;
+    overflow: hidden;
+    background: rgba(20, 14, 10, 0.55);
+  }
+  .pod-dialog,
+  .pod-overlay--side .pod-dialog {
+    width: 100%;
+    max-width: none;
+    max-height: 90svh;
+    margin: 0;
+    padding: 0 0 env(safe-area-inset-bottom);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-width: 3px 0 0;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.45);
+    background: var(--cream);
+    animation: pod-sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .pod-dialog__inner { gap: 14px; padding: 8px 18px 28px; border: 0; border-radius: 22px 22px 0 0; }
+  .pod-dialog__inner::before {
+    content: '';
+    align-self: center;
+    width: 44px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--card-dark);
+    opacity: 0.55;
+  }
+  .pod-dialog__head { position: sticky; top: 0; z-index: 3; margin: 0 -18px; padding: 8px 18px 10px; background: var(--cream); }
+  .pod-dialog__title { font-size: 26px; }
+  .pod-close { width: 44px; height: 44px; }
+}
+@keyframes pod-sheet-up {
+  from { transform: translateY(48px); opacity: 0.5; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pod-dialog { animation: none !important; }
+}

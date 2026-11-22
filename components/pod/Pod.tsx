@@ -460,7 +460,10 @@ const Pod: React.FC<Props> = ({ onNavigate, onAsk }) => {
           </nav>
 
           <nav className="pod-console" aria-label="Console">
-            <p className="pod-console__label">Console: go anywhere</p>
+            <p className="pod-console__label">
+              <span className="pod-console__flat">Console: go anywhere</span>
+              <span className="pod-console__gl">Swipe the room to look around · tap anything</span>
+            </p>
             <ul className="pod-console__grid">
               {WORLDS.map((w) => (
                 <li key={w.id}>

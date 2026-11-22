@@ -1458,11 +1458,16 @@ export function startPodRoom(
   // Once the camera has gone in to an area, dragging looks around it: the view follows the hand, like sliding a
   // photo. pan is in world units (x, y, z), eased into the camera's focus point, and cleared when the area changes.
   const pan = [0, 0, 0];
+  // On a portrait screen the room overview can't show the whole room at a readable size, so it shows the middle and
+  // a sideways swipe looks along the room (world x, eased in like pan). Wider than tall, it stays at 0.
+  let look = 0;
+  let lookEased = 0;
+  const isPortrait = () => canvas.clientWidth < canvas.clientHeight;
   let dragFrom: { x: number; y: number; id: number } | null = null;
   let dragged = false;
   const scene = canvas.parentElement;
   const dragStart = (e: PointerEvent) => {
-    if (!focusId || e.button !== 0 || !(e.target instanceof Element) || e.target.closest('a, button, .pod-dialog')) return;
+    if ((!focusId && !isPortrait()) || e.button !== 0 || !(e.target instanceof Element) || e.target.closest('a, button, .pod-dialog')) return;
     dragFrom = { x: e.clientX, y: e.clientY, id: e.pointerId };
     dragged = false;
   };
@@ -1476,6 +1481,11 @@ export function startPodRoom(
     dragFrom.x = e.clientX;
     dragFrom.y = e.clientY;
     const k = 1.25 / Math.max(1, canvas.clientHeight); // room units per pixel at the zoomed-in distance
+    if (!focusId) {
+      // the overview, on a phone: slide along the room (about two room units across the screen width)
+      look = Math.max(-1.25, Math.min(1.25, look - (dx / Math.max(1, canvas.clientWidth)) * 2.1));
+      return;
+    }
     if (focusId === 'desk') {
       // looking down at the desk: left-right slides along the wall, up-down slides across the desk's depth
       pan[0] += (-dx * Math.cos(left.ry) + dy * Math.sin(left.ry)) * k * 0.8;
@@ -1698,6 +1708,9 @@ export function startPodRoom(
   // the paths poster stays above, right of the stage photo
   const posterTex = paintTex(() => P.pathsPoster());
   add(...framed(onWing(right, 0.36, 0.3), 0.13, 0.13 / 0.75, posterTex, {}, [0.1, 0.08, 0.06]));
+  // SOUL RESONANCE: an inked three-slice panel, a nod to Fire Force and Soul Eater
+  const resonanceTex = paintTex(() => P.soulTriptych());
+  add(...framed(onWing(right, 0.6, 0.3), 0.14, 0.175, resonanceTex, {}, [0.1, 0.08, 0.06], 0.06));
   // lanyards hang from a hook on the right door post
   add(D(ball, 2, [0.6, 0.6, 0.62], 0.68, 0.2, 0.345, 0.012, 0.012, 0.012, { rough: 0.2, metal: 1 }));
   // one badge per event in events.ts; each reports a screen anchor so a real button can open that event
@@ -2232,6 +2245,62 @@ export function startPodRoom(
     const wb = { x: o.x - c0 * 0.62 + s0 * 0.55, z: o.z + s0 * 0.62 + c0 * 0.55 };
     add(...prop('whiteboard', wb.x, floorY, wb.z, deskYaw - 0.2));
     bookHits.push({ title: 'The whiteboard', author: 'this season\'s content calendar', x: wb.x, y: floorY + 1350 * MM, z: wb.z });
+
+    // Coco, asleep under the desk. From Max's photos: a small, lean, short-coated dog, near-black with brown in it, a
+    // greying muzzle, ears that stand up and fold over at the tips, a thin tail and a white spot on her chest. She
+    // lies curled on her side with her chin on her front paws and her tail wrapped round; she breathes slowly.
+    // Built in her own frame in millimetres (x toward her nose, y up, z toward the room), turned to lie along the desk.
+    {
+      const COAT: [number, number, number] = [0.045, 0.032, 0.026];
+      const MUZZLE: [number, number, number] = [0.2, 0.17, 0.155];
+      const base = { lx: 0.1, lz: -0.09 };
+      const yaw = deskYaw + 0.25; // nose a little toward the room
+      const bx = o.x + c0 * base.lx + s0 * base.lz;
+      const bz = o.z - s0 * base.lx + c0 * base.lz;
+      const cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const at = (x: number, y: number, z: number) => ({ x: bx + (x * cy + z * sy) * MM, y: floorY + y * MM, z: bz + (-x * sy + z * cy) * MM });
+      const part = (kind: number, tint: [number, number, number], p: [number, number, number], r: [number, number, number], extra: Partial<Draw> = {}) => {
+        const q = at(p[0], p[1], p[2]);
+        return D(ball, kind, tint, q.x, q.y, q.z, r[0] * MM, r[1] * MM, r[2] * MM, { ry: yaw, rough: 0.6, wrap: 0.2, ...extra });
+      };
+      const breathe = { bob: 3 * MM, phase: 0.4 };
+      add(
+        // body: ribcage, belly, haunch
+        part(1, COAT, [40, 95, 0], [190, 88, 105], breathe),
+        part(1, COAT, [150, 92, 10], [105, 86, 100], breathe),
+        part(1, COAT, [-140, 92, 20], [110, 88, 105]),
+        // the hind leg folded along her side, toward the room
+        part(1, COAT, [-120, 55, 105], [95, 38, 30]),
+        part(1, COAT, [-30, 22, 120], [60, 18, 26]),
+        // front legs stretched out, paws together
+        part(1, COAT, [270, 26, 40], [105, 24, 26]),
+        part(1, COAT, [280, 22, 95], [100, 22, 24]),
+        // the white spot on her chest, just showing
+        part(2, [0.88, 0.86, 0.82], [215, 70, 82], [24, 18, 10], { rough: 0.8 }),
+        // head resting on her paws, a greying muzzle and a black nose
+        part(1, COAT, [270, 88, 70], [78, 62, 66]),
+        part(1, MUZZLE, [350, 70, 78], [62, 38, 42]),
+        part(2, [0.03, 0.025, 0.025], [405, 76, 80], [15, 12, 14], { rough: 0.25 }),
+        // closed eyes: two short dark slits
+        part(2, [0.02, 0.015, 0.015], [318, 104, 118], [14, 3, 3], { rough: 0.6 }),
+        part(2, [0.02, 0.015, 0.015], [318, 104, 22], [14, 3, 3], { rough: 0.6 }),
+        // ears: up, then folded over at the tips
+        part(1, COAT, [240, 148, 112], [34, 40, 12], { rz: 0.5 }),
+        part(1, COAT, [262, 168, 118], [26, 14, 11], { rz: -0.4 }),
+        part(1, COAT, [240, 148, 28], [34, 40, 12], { rz: 0.5 }),
+        part(1, COAT, [262, 168, 22], [26, 14, 11], { rz: -0.4 }),
+      );
+      // the tail: a thin curve from the rump round toward her back feet
+      for (let i = 0; i <= 9; i++) {
+        const t = i / 9;
+        const a = Math.PI * (0.95 - t * 0.75);
+        const x = -230 + Math.cos(a) * -60 * t - 20 * t;
+        const z = 20 + Math.sin(a) * 120 * t;
+        add(part(1, COAT, [x, 26 + 4 * (1 - t), z], [22 - t * 10, 15 - t * 7, 22 - t * 10]));
+      }
+      const head = at(300, 90, 70);
+      bookHits.push({ title: 'Coco', author: 'asleep under the desk, as usual', x: head.x, y: head.y, z: head.z });
+    }
     bookHits.push({ title: 'Nintendo Switch OLED', author: 'docked · Super Smash Bros. Ultimate', x: sw.x, y: sw.y + 0.04, z: sw.z });
     bookHits.push({ title: 'GameCube-style controller', author: 'how Max plays Smash · 999+ hours', x: gc.x, y: gc.y + 0.02, z: gc.z });
     bookHits.push({ title: 'Macro pad', author: 'Work Louder · 13 keys, a knob and a stick', x: pad.x, y: pad.y + 0.012, z: pad.z });
@@ -2900,7 +2969,11 @@ export function startPodRoom(
     }
     camK = calm ? goalK : camK + (goalK - camK) * (1 - Math.exp(-dt * 4.5));
     const kk = camK * camK * (3 - 2 * camK);
-    const baseEye: [number, number, number] = [-0.16 * (1 - kk) + pointerX * 0.22 * (1 - kk), 0.26 - pointerY * 0.1 * (1 - kk), 4.25];
+    if (!isPortrait()) look = 0;
+    lookEased += (look - lookEased) * (calm ? 1 : 1 - Math.exp(-dt * 8));
+    const lx = lookEased * (1 - kk);
+    const tilt = isPortrait() ? 0 : 1; // a finger on glass shouldn't swing the camera the way a mouse does
+    const baseEye: [number, number, number] = [-0.16 * (1 - kk) + lx + pointerX * 0.22 * tilt * (1 - kk), 0.26 - pointerY * 0.1 * tilt * (1 - kk), 4.25];
     // a section's object fills the frame; the desk is a place you step up to, so the camera goes closer
     const near = focusId === 'library' ? 0.57 : 0.58; // far enough back that all six shelves and the top fit
     const toward: [number, number, number] = [
@@ -2914,10 +2987,12 @@ export function startPodRoom(
       baseEye[2] + (camFocus[2] + Math.cos(left.ry) * 0.2 - baseEye[2]) * kk,
     ];
     const eye: [number, number, number] = focusId === 'desk' ? overhead : toward;
-    const target: [number, number, number] = [-0.16 + (camFocus[0] + 0.16) * kk, -0.04 + (camFocus[1] + 0.04) * kk, camFocus[2] * kk];
+    const target: [number, number, number] = [-0.16 + lx + (camFocus[0] + 0.16 - lx) * kk, -0.04 + (camFocus[1] + 0.04) * kk, camFocus[2] * kk];
     const view = lookAt(eye, target, [0, 1, 0]);
     // Keep the whole room in frame at any window shape: 34 degrees tall at 16:9, wider when the window is narrower.
-    const fovY = 2 * Math.atan(Math.tan((17 * Math.PI) / 180) * Math.max(1, (16 / 9) / (bw / bh)));
+    // A phone held upright stops widening at the shrine and its neighbours (swipe to see the rest), so things stay
+    // big enough to read and tap instead of shrinking into a strip.
+    const fovY = 2 * Math.atan(Math.tan((17 * Math.PI) / 180) * Math.min(Math.max(1, (16 / 9) / (bw / bh)), bw < bh ? 1.6 : 99));
     const proj = perspective(fovY, bw / bh, 0.08, 20);
     const pick = mul(proj, view);
     const mx = (pointerX * 0.5 + 0.5) * canvas.clientWidth;
@@ -3186,6 +3261,7 @@ export function startPodRoom(
   return {
     focus: (id) => {
       if (id !== focusId) pan[0] = pan[1] = pan[2] = 0;
+      if (!id) look = lookEased; // coming back out: stay where the camera is
       focusId = id;
       scene?.classList.toggle('pod-scene--zoomed', !!id);
     },
