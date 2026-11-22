@@ -239,8 +239,13 @@ void main() {
       soft *= soft;
       float n = fbm(vec2(vUv.x * 2.4 - uTime * 0.7, vUv.y * 0.9 + uTime * 0.12) + vWorld.xz * 3.0);
       float tendril = smoothstep(0.2, 0.8, n);
-      float fade = smoothstep(0.0, 0.3, vUv.x) * (1.0 - smoothstep(0.2, 0.8, vUv.x));
-      a = soft * fade * (0.45 + 0.6 * tendril);
+      // fine strands: noise stretched along the ribbon and snaking as it streams to the tip, so it reads as smoke filaments
+      float strands = fbm(vec2(vUv.x * 1.6 - uTime * 0.6, vUv.y * 6.0 + sin(vUv.x * 5.0 + uTime) * 0.6) + vWorld.xz * 2.0);
+      float streak = smoothstep(0.35, 0.75, strands);
+      // the tip dissolves into the noise instead of ending in a point
+      float tipEdge = 0.35 + 0.5 * n;
+      float fade = smoothstep(0.0, 0.25, vUv.x) * (1.0 - smoothstep(tipEdge - 0.3, tipEdge + 0.35, vUv.x));
+      a = soft * fade * (0.3 + 0.5 * tendril) * (0.45 + 0.8 * streak);
     }
     // blue light that only turns white where the wisps are densest
     vec3 core = mix(uTint, vec3(0.85, 0.97, 1.0), clamp(a * a * 0.55, 0.0, 1.0));
@@ -2455,6 +2460,12 @@ export function startPodRoom(
       [[0.1, 0.16, 0.06], [0.2, 0.26, 0.08], [0.33, 0.27, 0.05], 0.28, 0.025],
       [[-0.06, 0.19, 0.04], [-0.08, 0.33, 0.05], [0.04, 0.43, 0.02], 0.27, 0.03],
       [[0.16, 0.1, 0.07], [0.27, 0.15, 0.09], [0.37, 0.11, 0.06], 0.22, 0.02],
+      // thin trailing strands that curl up and away, faint, and dissolve rather than end
+      [[0.0, 0.2, 0.0], [0.12, 0.46, 0.02], [0.34, 0.56, -0.02], 0.12, 0.05],
+      [[0.06, 0.18, -0.04], [0.02, 0.44, -0.06], [0.18, 0.62, -0.04], 0.1, 0.06],
+      [[-0.08, 0.17, 0.02], [-0.2, 0.36, 0.04], [-0.12, 0.55, 0.0], 0.1, 0.05],
+      [[0.14, 0.14, -0.02], [0.32, 0.3, -0.03], [0.46, 0.32, 0.0], 0.1, 0.045],
+      [[-0.12, 0.12, 0.06], [-0.26, 0.22, 0.08], [-0.3, 0.4, 0.05], 0.09, 0.04],
     ];
     for (const [p0, p1, p2, w, sway] of wisps) {
       const k3 = (p: number[]) => p.map((v) => v * K);
