@@ -1744,3 +1744,54 @@ export function energyCanWrap(w = 512, h = 512) {
   for (const cx of [w * 0.25, w * 0.75]) g.fillText('Red Bull', cx, h * 0.5);
   return c;
 }
+
+/**
+ * Coco's hoodie as one knitted shell: forest green, with the wings patch printed on her back where it faces the
+ * room. The texture runs along her spine (left edge at the rear hem, right edge at the hood's rim) and round her
+ * body. The patch sits with its top toward her head, the way it reads on a hoodie she is wearing.
+ */
+export function cocoHoodie(w = 1024, h = 1024) {
+  const { c, g } = make(w, h);
+  g.fillStyle = '#1f5a3a';
+  g.fillRect(0, 0, w, h);
+  // knit: fine ribs along her length, a little mottling
+  g.fillStyle = 'rgba(0, 0, 0, 0.1)';
+  for (let y = 0; y < h; y += 6) g.fillRect(0, y, w, 2);
+  const r = rng(77);
+  for (let i = 0; i < 900; i++) {
+    g.fillStyle = r() > 0.5 ? 'rgba(255, 255, 255, 0.035)' : 'rgba(0, 0, 0, 0.05)';
+    g.fillRect(r() * w, r() * h, 10 + r() * 30, 3);
+  }
+  // ribbed hem at the back and the hood's rim at the front
+  g.fillStyle = 'rgba(0, 0, 0, 0.22)';
+  g.fillRect(0, 0, w * 0.035, h);
+  g.fillRect(w * 0.955, 0, w * 0.045, h);
+  // the patch: only the shield and its wings, cut out of the square patch art, so nothing reads as a card
+  const patch = wingsPatch(512, 512);
+  const S = COCO_PATCH.size * w;
+  for (const dv of [0, 1]) {
+    g.save();
+    g.translate(COCO_PATCH.u * w, (COCO_PATCH.v + dv) * h);
+    g.scale(1, COCO_PATCH.around);
+    g.rotate(COCO_PATCH.turn);
+    g.beginPath();
+    const X = (u: number) => (u - 0.5) * S, Y = (v: number) => (v - 0.5) * S;
+    g.moveTo(X(0.185), Y(0.145));
+    g.lineTo(X(0.815), Y(0.145));
+    g.lineTo(X(0.815), Y(0.585));
+    g.quadraticCurveTo(X(0.815), Y(0.79), X(0.5), Y(0.915));
+    g.quadraticCurveTo(X(0.185), Y(0.79), X(0.185), Y(0.585));
+    g.closePath();
+    g.clip();
+    g.drawImage(patch, -S / 2, -S / 2, S, S);
+    g.restore();
+  }
+  return c;
+}
+/**
+ * Where the patch sits on the hoodie texture and how it is turned. Seen from the room the texture reads as drawn:
+ * right is toward her head, down is down her flank, and the top edge (wrapping to the bottom) is the room-side
+ * seam, so a v just under 0 is high on the flank facing the room. `around` evens out the stretch, since the shell
+ * is longer round her than along her.
+ */
+export const COCO_PATCH = { u: 0.44, v: -0.085, size: 0.32, turn: Math.PI / 2, around: 0.66 };

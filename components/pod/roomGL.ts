@@ -949,6 +949,98 @@ function curvedPanel(R: number, arc: number, h: number, off = 0, depth = 0, segs
 }
 
 /**
+ * A smooth skin lofted along a spine: each ring is [x, y, z, half-width, half-height], the spine is splined through
+ * the ring centres, and an ellipse is swept along it, so a body, a leg or a tail is one continuous surface instead
+ * of a row of balls. Closed skins taper to a point at both ends; open ones (a garment) stop at a hem. Texture u
+ * runs along the spine by arc length and v round the ring, starting on the side and going up over the top.
+ * `flat` squashes the underside, for something lying on the floor.
+ */
+function loftMesh(rings: number[][], open = false, sub = 6, slices = 28, flat = 1): CpuMesh {
+  const b = new Builder();
+  const cr = (a: number, p1: number, p2: number, d: number, t: number) =>
+    0.5 * (2 * p1 + (p2 - a) * t + (2 * a - 5 * p1 + 4 * p2 - d) * t * t + (3 * p1 - a - 3 * p2 + d) * t * t * t);
+  const R: number[][] = [];
+  const n = rings.length;
+  for (let i = 0; i < n - 1; i++) {
+    const r0 = rings[Math.max(0, i - 1)], r1 = rings[i], r2 = rings[i + 1], r3 = rings[Math.min(n - 1, i + 2)];
+    for (let k = 0; k < sub; k++) R.push([0, 1, 2, 3, 4].map((c) => cr(r0[c], r1[c], r2[c], r3[c], k / sub)));
+  }
+  R.push(rings[n - 1].slice());
+  if (!open) {
+    // round the ends off: a few shrinking rings past each end, like the cap of an egg
+    const cap = (end: number[], next: number[], out: number[][]) => {
+      const d = [end[0] - next[0], end[1] - next[1], end[2] - next[2]];
+      const l = Math.hypot(d[0], d[1], d[2]) || 1;
+      const reach = Math.min(end[3], end[4]) * 0.9;
+      for (let k = 1; k <= 4; k++) {
+        const a = (k / 4) * (Math.PI / 2);
+        const c = Math.max(Math.cos(a), 0.02);
+        out.push([end[0] + (d[0] / l) * reach * Math.sin(a), end[1] + (d[1] / l) * reach * Math.sin(a), end[2] + (d[2] / l) * reach * Math.sin(a), end[3] * c, end[4] * c]);
+      }
+    };
+    const head: number[][] = [], tail: number[][] = [];
+    cap(R[0], R[1], head);
+    cap(R[R.length - 1], R[R.length - 2], tail);
+    R.unshift(...head.reverse());
+    R.push(...tail);
+  }
+  const m = R.length;
+  const sub3 = (a: number[], c: number[]) => [a[0] - c[0], a[1] - c[1], a[2] - c[2]];
+  const crs = (a: number[], c: number[]) => [a[1] * c[2] - a[2] * c[1], a[2] * c[0] - a[0] * c[2], a[0] * c[1] - a[1] * c[0]];
+  const unit = (v: number[]) => {
+    const l = Math.hypot(v[0], v[1], v[2]) || 1;
+    return [v[0] / l, v[1] / l, v[2] / l];
+  };
+  const arc: number[] = [0];
+  for (let i = 1; i < m; i++) arc.push(arc[i - 1] + Math.hypot(R[i][0] - R[i - 1][0], R[i][1] - R[i - 1][1], R[i][2] - R[i - 1][2]));
+  const P: number[][][] = [];
+  for (let i = 0; i < m; i++) {
+    const t = unit(sub3(R[Math.min(m - 1, i + 1)], R[Math.max(0, i - 1)]));
+    const side = unit(crs(t, [0, 1, 0]));
+    const up = crs(side, t);
+    const row: number[][] = [];
+    for (let j = 0; j <= slices; j++) {
+      const th = (j / slices) * Math.PI * 2;
+      const c = Math.cos(th) * R[i][3];
+      const sn = Math.sin(th);
+      const h = sn * R[i][4] * (sn < 0 ? flat : 1);
+      row.push([R[i][0] + side[0] * c + up[0] * h, R[i][1] + side[1] * c + up[1] * h, R[i][2] + side[2] * c + up[2] * h]);
+    }
+    P.push(row);
+  }
+  const grid: number[][] = [];
+  for (let i = 0; i < m; i++) {
+    const row: number[] = [];
+    for (let j = 0; j <= slices; j++) {
+      const a = P[Math.min(m - 1, i + 1)][j], c = P[Math.max(0, i - 1)][j];
+      const e = P[i][(j + 1) % slices], f = P[i][(j - 1 + slices) % slices];
+      let nr = crs(sub3(e, f), sub3(a, c));
+      const outward = sub3(P[i][j], R[i]);
+      if (nr[0] * outward[0] + nr[1] * outward[1] + nr[2] * outward[2] < 0) nr = [-nr[0], -nr[1], -nr[2]];
+      if (Math.hypot(nr[0], nr[1], nr[2]) < 1e-9) nr = outward;
+      row.push(b.vert(P[i][j], nr, [arc[i] / arc[m - 1], j / slices], 1, 0));
+    }
+    grid.push(row);
+  }
+  for (let i = 0; i < m - 1; i++) {
+    for (let j = 0; j < slices; j++) {
+      // wound counter-clockwise seen from outside: check one quad's facing against the direction out of the spine
+      const p0 = P[i][j], p1 = P[i + 1][j], p2 = P[i][j + 1];
+      const fn = crs(sub3(p1, p0), sub3(p2, p0));
+      const out = sub3(p0, R[i]);
+      if (fn[0] * out[0] + fn[1] * out[1] + fn[2] * out[2] >= 0) {
+        b.tri(grid[i][j], grid[i + 1][j], grid[i][j + 1]);
+        b.tri(grid[i][j + 1], grid[i + 1][j], grid[i + 1][j + 1]);
+      } else {
+        b.tri(grid[i][j], grid[i][j + 1], grid[i + 1][j]);
+        b.tri(grid[i][j + 1], grid[i + 1][j + 1], grid[i + 1][j]);
+      }
+    }
+  }
+  return b.finish();
+}
+
+/**
  * A tapering ribbon along a quadratic curve p0 -> p1 -> p2, as two crossed strips (one facing +z, one turned 90 degrees
  * about the curve) so it reads as a soft volume from any angle. uv.x runs 0 at the root to 1 at the tip, uv.y across.
  */
@@ -1363,8 +1455,8 @@ export function startPodRoom(
   const stageAt = onWing(right, -0.14, 0.3);
   type RGB = [number, number, number];
   /**
-   * A medal hung on a wall pin, the way a real one hangs: the ribbon is a loop over the pin, so its two strips meet
-   * at the top and spread to the jump ring; the medal is struck metal, a thick disc with a raised centre.
+   * A medal hung on a wall peg, the way a real one hangs: the neck ribbon drapes over the peg, so its two halves
+   * hang side by side and meet in a V at the jump ring; the medal is struck metal, a thick disc with a raised centre.
    */
   const hungMedal = (
     at: Spot,
@@ -1378,20 +1470,24 @@ export function startPodRoom(
       const q = along(at, depth);
       return { x: q.x + Math.cos(at.ry) * dx, y: at.y + dy, z: q.z - Math.sin(at.ry) * dx };
     };
-    const pinY = 0.15, ringY = -0.01, spread = 0.03;
+    // A neck ribbon hung over a peg: the two halves hang side by side from the peg and draw together into a V at
+    // the medal's ring, one lapped over the other.
+    const pinY = 0.15, ringY = -0.01;
     const rw = art?.width ?? 0.028;
-    const len = Math.hypot(spread / 2, pinY - ringY);
-    const lean = Math.atan2(spread / 2, pinY - ringY);
+    const top = rw * 0.52, bottom = rw * 0.1;
+    const len = Math.hypot(top - bottom, pinY - ringY);
+    const lean = Math.atan2(top - bottom, pinY - ringY);
     const out: Draw[] = [];
     for (const side of [-1, 1]) {
-      const m = lat((side * spread) / 4, (pinY + ringY) / 2, 0.01);
-      const f = lat((side * spread) / 4, (pinY + ringY) / 2, 0.0125);
+      const depth = side < 0 ? 0.009 : 0.0115;
+      const m = lat((side * (top + bottom)) / 2, (pinY + ringY) / 2, depth);
+      const f = lat((side * (top + bottom)) / 2, (pinY + ringY) / 2, depth + 0.0012);
       // a printed ribbon (a flag, say) is one textured strip; a plain one is cloth with a stripe laid down the middle
-      if (art) out.push(D(box, 2, [1, 1, 1], m.x, m.y, m.z, rw, len, 0.002, { ry: at.ry, rz: side * lean, tex: art.ribbon[side < 0 ? 0 : 1], rough: 0.85 }));
+      if (art) out.push(D(box, 2, [1, 1, 1], m.x, m.y, m.z, rw, len, 0.002, { ry: at.ry, rz: -side * lean, tex: art.ribbon[side < 0 ? 0 : 1], rough: 0.85 }));
       else
         out.push(
-          D(box, 1, cloth, m.x, m.y, m.z, rw, len, 0.002, { ry: at.ry, rz: side * lean, rough: 0.85, wrap: 0.3 }),
-          D(box, 1, stripe, f.x, f.y, f.z, 0.008, len, 0.001, { ry: at.ry, rz: side * lean, rough: 0.85, wrap: 0.3 }),
+          D(box, 1, cloth, m.x, m.y, m.z, rw, len, 0.002, { ry: at.ry, rz: -side * lean, rough: 0.85, wrap: 0.3 }),
+          D(box, 1, stripe, f.x, f.y, f.z, 0.008, len, 0.001, { ry: at.ry, rz: -side * lean, rough: 0.85, wrap: 0.3 }),
         );
     }
     const pin = lat(0, pinY + 0.004, 0.008);
@@ -1399,7 +1495,7 @@ export function startPodRoom(
     const disc = lat(0, ringY - 0.008 - r, 0.016);
     const face = lat(0, ringY - 0.008 - r, 0.019);
     out.push(
-      D(ball, 2, [0.7, 0.7, 0.72], pin.x, pin.y, pin.z, 0.006, 0.006, 0.006, { metal: 1, rough: 0.3 }),
+      D(box, 2, [0.7, 0.7, 0.72], pin.x, pin.y - 0.006, pin.z, rw * 2.05 + 0.014, 0.007, 0.012, { ry: at.ry, metal: 1, rough: 0.3 }),
       D(tube, 2, metalTint, ring.x, ring.y, ring.z, 0.012, 0.004, 0.012, { ry: at.ry, rz: Math.PI / 2, metal: 1, rough: 0.3 }),
       D(ball, 2, metalTint, disc.x, disc.y, disc.z, r, r, 0.008, { ry: at.ry, metal: 1, rough: 0.28 }),
     );
@@ -2291,46 +2387,43 @@ export function startPodRoom(
         const q = at(p[0], p[1], p[2]);
         return D(ball, kind, tint, q.x, q.y, q.z, r[0] * SC * MM, r[1] * SC * MM, r[2] * SC * MM, { ry: yaw, rough: 0.6, wrap: 0.2, ...extra });
       };
-      const breathe = { bob: 4 * MM, phase: 0.4 };
+      const breathe = { bob: 3 * MM, phase: 0.4 };
+      // Every skin is lofted in her frame with z already flipped, then placed whole at her origin.
+      const flipZ = (rings: number[][]) => rings.map(([x, y, z, w, h]) => [x, y, -z, w, h]);
+      const o0 = at(0, 0, 0);
+      const skin = (rings: number[][], kind: number, tint: [number, number, number], extra: Partial<Draw> = {}, open = false, flat = 1) =>
+        D(upload(gl, loftMesh(flipZ(rings), open, 6, 28, flat)), kind, tint, o0.x, o0.y, o0.z, SC * MM, SC * MM, SC * MM, { ry: yaw, rough: 0.62, wrap: 0.25, ...extra });
+      // her spine from rump to the stop of her muzzle: [x, y, z, half-width, half-height]
+      const SPINE = [
+        [-240, 72, 20, 42, 42], [-205, 82, 20, 80, 70], [-160, 88, 20, 102, 84], [-95, 89, 13, 99, 82], [-35, 87, 6, 88, 76], [40, 94, 0, 100, 88],
+        [110, 95, 5, 102, 88], [160, 93, 13, 95, 84], [205, 91, 36, 70, 64], [240, 90, 56, 62, 57], [278, 90, 70, 66, 61],
+        [308, 86, 75, 58, 52], [332, 79, 77, 46, 40],
+      ];
+      // the hoodie follows the same spine from behind her ribs up over her head, a little proud of her coat
+      const pad = (r: number[], by: number) => [r[0], r[1] + by * 0.25, r[2], r[3] + by, r[4] + by];
+      const HOODIE_RINGS = [
+        [-112, 89, 15, 108, 91], [-95, 89, 13, 106, 89], ...SPINE.slice(4, 10).map((r) => pad(r, 7)), pad(SPINE[10], 9), [296, 90, 73, 76, 71], [302, 90, 74, 80, 75],
+      ];
       add(
-        // body under the hoodie: ribcage, belly, haunch
-        part(1, COAT, [40, 95, 0], [190, 88, 105], breathe),
-        part(1, COAT, [150, 92, 10], [105, 86, 100], breathe),
-        part(1, COAT, [-140, 92, 20], [110, 88, 105]),
-        // the hoodie: a green shell over her back and sides, ending short of the haunch, rising and falling with her
-        part(1, HOODIE, [30, 102, -6], [205, 92, 116], { ...breathe, rough: 0.8, wrap: 0.45 }),
-        part(1, HOODIE, [150, 98, 4], [116, 90, 108], { ...breathe, rough: 0.8, wrap: 0.45 }),
-        // the hind leg folded along her side
-        part(1, COAT, [-120, 55, 105], [95, 38, 30]),
-        part(1, COAT, [-30, 22, 120], [60, 18, 26]),
-        // front legs stretched out, paws together
-        part(1, COAT, [270, 26, 40], [105, 24, 26]),
-        part(1, COAT, [280, 22, 95], [100, 22, 24]),
-        // the white spot on her chest, just showing past the hoodie
-        part(2, [0.88, 0.86, 0.82], [225, 62, 60], [22, 16, 12], { rough: 0.8 }),
-        // head resting on her paws: the hood is up over the crown and ears, the face and greying muzzle out front
-        part(1, COAT, [270, 88, 70], [78, 62, 66]),
-        part(1, HOODIE, [228, 116, 70], [64, 56, 74], { rough: 0.8, wrap: 0.45 }),
-        part(1, HOODIE, [262, 112, 70], [10, 50, 70], { rough: 0.8, wrap: 0.45 }), // the hood's rim, pushed back off her face
-        part(1, MUZZLE, [350, 70, 78], [62, 38, 42]),
-        part(2, [0.03, 0.025, 0.025], [405, 76, 80], [15, 12, 14], { rough: 0.25 }),
+        skin(SPINE, 1, COAT, breathe, false, 0.9),
+        // the greying muzzle carries on from the stop to her nose
+        skin([[318, 83, 76, 51, 45], [338, 77, 77, 44, 38], [368, 72, 79, 37, 30], [394, 70, 80, 31, 24]], 1, MUZZLE, breathe),
+        part(2, [0.03, 0.025, 0.025], [412, 73, 80], [14, 11, 13], { rough: 0.25, ...breathe }),
         // closed eyes: two short dark slits
-        part(2, [0.02, 0.015, 0.015], [322, 98, 120], [12, 3, 3], { rough: 0.6 }),
-        part(2, [0.02, 0.015, 0.015], [322, 98, 22], [12, 3, 3], { rough: 0.6 }),
+        part(2, [0.02, 0.015, 0.015], [322, 100, 118], [12, 3, 3], { rough: 0.6, ...breathe }),
+        part(2, [0.02, 0.015, 0.015], [322, 100, 30], [12, 3, 3], { rough: 0.6, ...breathe }),
+        // the hoodie, hood up, with the wings printed on her back: one knitted shell, rising and falling with her
+        skin(HOODIE_RINGS, 2, [1, 1, 1], { ...breathe, tex: paintTex(() => P.cocoHoodie()), rough: 0.88, wrap: 0.45 }, true, 0.9),
+        // the hind leg folded along her side: thigh, hock, and the paw pointing forward
+        skin([[-185, 62, 88, 34, 40], [-125, 58, 106, 40, 44], [-65, 40, 117, 27, 27], [-20, 25, 121, 19, 18], [28, 20, 121, 17, 15], [48, 19, 121, 19, 15]], 1, COAT),
+        // front legs stretched out, paws together under her chin
+        skin([[150, 62, 44, 36, 38], [212, 36, 42, 27, 27], [288, 25, 40, 21, 20], [350, 21, 42, 20, 17], [370, 20, 42, 22, 16]], 1, COAT),
+        skin([[160, 58, 92, 34, 36], [220, 33, 95, 26, 25], [296, 23, 96, 20, 19], [356, 20, 96, 20, 16], [376, 19, 96, 22, 15]], 1, COAT),
+        // the white spot on her chest, just showing past the hoodie
+        part(2, [0.88, 0.86, 0.82], [222, 60, 62], [22, 16, 12], { rough: 0.8 }),
+        // her tail: thick at the root, curling round along her flank and thinning to a point
+        skin([[-232, 58, 14, 19, 18], [-272, 34, -14, 15, 14], [-276, 19, -72, 12, 11], [-238, 14, -122, 10, 9], [-172, 11, -138, 7.5, 7], [-112, 9, -128, 4.5, 4]], 1, COAT),
       );
-      // the wings patch on her back, facing the room and tipped up a little, its top toward her head as on a worn hoodie
-      {
-        const p = at(40, 108, -124);
-        add(D(box, 2, [0.62, 0.62, 0.62], p.x, p.y, p.z, 125 * SC * MM, 125 * SC * MM, 0.002, { ry: yaw, rx: -0.25, rz: -Math.PI / 2, tex: paintTex(() => P.wingsPatch()), rough: 0.85, ...breathe }));
-      }
-      // the tail: a thin curve from the rump round toward her back feet
-      for (let i = 0; i <= 9; i++) {
-        const t = i / 9;
-        const a = Math.PI * (0.95 - t * 0.75);
-        const x = -230 + Math.cos(a) * -60 * t - 20 * t;
-        const z = 20 + Math.sin(a) * 120 * t;
-        add(part(1, COAT, [x, 26 + 4 * (1 - t), z], [22 - t * 10, 15 - t * 7, 22 - t * 10]));
-      }
       const head = at(300, 100, 70);
       bookHits.push({ title: 'Coco', author: 'asleep under the desk in her Survey Corps hoodie', x: head.x, y: head.y, z: head.z });
     }
