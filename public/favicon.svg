@@ -1,24 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- An original soul for wm3.ai: an amber blob whose crown sweeps up into a wisp that hooks over, half-lidded and
-       grinning, outlined in the pod's ink so it holds on light and dark tabs. -->
-  <defs>
-    <radialGradient id="g" cx="0.34" cy="0.46" r="0.72">
-      <stop offset="0" stop-color="#fff0c4"/>
-      <stop offset="0.42" stop-color="#f4b54a"/>
-      <stop offset="1" stop-color="#d46a28"/>
-    </radialGradient>
-    <clipPath id="lidL"><rect x="0" y="34.2" width="32" height="30"/></clipPath>
-    <clipPath id="lidR"><rect x="32" y="33.4" width="32" height="30"/></clipPath>
-  </defs>
-  <path d="M30 62C15 62 5 52 5 40C5 27 15 19 27 18C33 17.5 37 14 39 8C40.5 3.5 45.5 1.5 50.5 3C54 4 56.5 7 55.5 10C52.5 7.8 48.5 8.2 47.3 11.8C46.2 15.2 47.6 18.6 49.6 21.2C55 25.8 57.5 32.5 57.5 40C57.5 52 46.5 62 30 62Z"
-        fill="url(#g)" stroke="#1f150e" stroke-width="3.6" stroke-linejoin="round"/>
-  <path d="M41.5 9C42.5 6 45.5 4.6 48.5 5" fill="none" stroke="#fff0c4" stroke-width="2.2" stroke-linecap="round" opacity="0.85"/>
-  <g clip-path="url(#lidL)"><ellipse cx="21.5" cy="38" rx="6" ry="6.4" fill="#fff"/></g>
-  <g clip-path="url(#lidR)"><ellipse cx="40.5" cy="37.2" rx="6" ry="6.4" fill="#fff"/></g>
-  <path d="M14.8 34.6L28.4 33.8M33.8 33L47.4 33.8" stroke="#1f150e" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="23" cy="38.6" r="2.7" fill="#1f150e"/>
-  <circle cx="42" cy="37.8" r="2.7" fill="#1f150e"/>
-  <ellipse cx="13" cy="47" rx="3.6" ry="2.1" fill="#e5634a" opacity="0.45"/>
-  <ellipse cx="50" cy="46.5" rx="3.6" ry="2.1" fill="#e5634a" opacity="0.45"/>
-  <path d="M24 50Q31.5 55 39.5 48" fill="none" stroke="#1f150e" stroke-width="2.9" stroke-linecap="round"/>
+  <!-- wm3.ai favicon: a blue soul leaning into its own momentum, afterimages behind it, a jagged grin, and a molten
+       orange wavelength in orbit. Original artwork; drawn on the Soul Favicons canvas as number 35. -->
+<defs>
+<radialGradient id="wb" cx="0.36" cy="0.3" r="0.85"><stop offset="0" stop-color="#f2fbff"></stop><stop offset="0.28" stop-color="#9ad8ff"></stop><stop offset="0.66" stop-color="#4aa6ff"></stop><stop offset="1" stop-color="#1f5fb8"></stop></radialGradient>
+<radialGradient id="wbFlip" cx="0.64" cy="0.3" r="0.85"><stop offset="0" stop-color="#f2fbff"></stop><stop offset="0.28" stop-color="#9ad8ff"></stop><stop offset="0.66" stop-color="#4aa6ff"></stop><stop offset="1" stop-color="#1f5fb8"></stop></radialGradient>
+<linearGradient id="wt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"></stop><stop offset="1" stop-color="#dccdb2"></stop></linearGradient>
+<radialGradient id="wi" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff6c8"></stop><stop offset="0.45" stop-color="#ffb43a"></stop><stop offset="0.85" stop-color="#e0661a"></stop><stop offset="1" stop-color="#7a2e0a"></stop></radialGradient>
+<linearGradient id="wm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a8"></stop><stop offset="0.45" stop-color="#ff9a2a"></stop><stop offset="1" stop-color="#a6400e"></stop></linearGradient>
+<radialGradient id="wg" cx="0.5" cy="0.55" r="0.5"><stop offset="0" stop-color="#ff8a1e" stop-opacity="0.5"></stop><stop offset="1" stop-color="#ff8a1e" stop-opacity="0"></stop></radialGradient>
+</defs>
+<g transform="translate(34 34) scale(0.88) translate(-34 -34)">
+<ellipse cx="36" cy="63" rx="17" ry="1.8" fill="#1f150e" opacity="0.28"></ellipse>
+<path d="M62.7 30A29 8 -8 0 1 5.3 38" fill="none" stroke="#1f150e" stroke-width="5" stroke-linecap="round" opacity="0.8"></path>
+<path d="M62.7 30A29 8 -8 0 1 5.3 38" fill="none" stroke="#a6400e" stroke-width="3" stroke-linecap="round"></path>
+<g transform="rotate(14 34 40)">
+<g transform="translate(66 0) scale(-1 1)">
+<path d="M32 61C17 61 7 51 7 38C7 25 17 16 29 14.5C37 13.5 43.5 10 46 3C50.5 6.5 51 13 47.5 18C54 22.5 57 30 57 38C57 51 47 61 32 61Z" fill="#4aa6ff" opacity="0.18" transform="translate(16 2)"></path>
+<path d="M32 61C17 61 7 51 7 38C7 25 17 16 29 14.5C37 13.5 43.5 10 46 3C50.5 6.5 51 13 47.5 18C54 22.5 57 30 57 38C57 51 47 61 32 61Z" fill="#4aa6ff" opacity="0.32" transform="translate(8 1)"></path>
+<path d="M32 61C17 61 7 51 7 38C7 25 17 16 29 14.5C37 13.5 43.5 10 46 3C50.5 6.5 51 13 47.5 18C54 22.5 57 30 57 38C57 51 47 61 32 61Z" fill="url(#wbFlip)" stroke="#1f150e" stroke-width="3.4" stroke-linejoin="round"></path>
+<path d="M12.5 47C15.5 54 22 58.6 30 59.4" fill="none" stroke="#c4ecff" stroke-width="2" stroke-linecap="round" opacity="0.75"></path>
+<path d="M46.8 5.2C49.4 8.2 49.8 12 48 15" fill="none" stroke="#f2fbff" stroke-width="1.5" stroke-linecap="round" opacity="0.9"></path>
+<ellipse cx="21.5" cy="39" rx="8.2" ry="6.6" fill="#1a3f7a" opacity="0.22"></ellipse>
+<ellipse cx="42.5" cy="39" rx="8.2" ry="6.6" fill="#1a3f7a" opacity="0.22"></ellipse>
+<path d="M14.5 34.5L28 38C27.5 42 25 44 21.5 44C17.5 44 14.5 40 14.5 34.5Z" fill="#ffffff" stroke="#1f150e" stroke-width="2.2" stroke-linejoin="round"></path>
+<path d="M49.5 34.5L36 38C36.5 42 39 44 42.5 44C46.5 44 49.5 40 49.5 34.5Z" fill="#ffffff" stroke="#1f150e" stroke-width="2.2" stroke-linejoin="round"></path>
+<circle cx="20.2" cy="40.4" r="2.5" fill="#1f150e"></circle>
+<circle cx="40.6" cy="40.4" r="2.5" fill="#1f150e"></circle>
+<circle cx="19.4" cy="39.5" r="0.8" fill="#ffffff"></circle>
+<circle cx="39.8" cy="39.5" r="0.8" fill="#ffffff"></circle>
+<path d="M18 47Q32 54 46 47L44.6 51.6Q32 59.4 19.4 51.6Z" fill="#0f1e3a" stroke="#1f150e" stroke-width="2.4" stroke-linejoin="round"></path>
+<path d="M19.2 47.8L21.6 51.6L24.2 48.8L26.8 53L29.4 49.6L32 54L34.6 49.6L37.2 53L39.8 48.8L42.4 51.6L44.8 47.8Q32 53.8 19.2 47.8Z" fill="url(#wt)" stroke="#1f150e" stroke-width="1.1" stroke-linejoin="round"></path>
+</g>
+</g>
+<path d="M14 33Q34 25.5 57 28.5" fill="none" stroke="#163a70" stroke-width="3.6" stroke-linecap="round" opacity="0.22"></path>
+<path d="M5.3 38A29 8 -8 0 1 62.7 30" fill="none" stroke="#ff8a1e" stroke-width="8" stroke-linecap="round" opacity="0.18"></path>
+<path d="M5.3 38A29 8 -8 0 1 62.7 30" fill="none" stroke="#1f150e" stroke-width="6" stroke-linecap="round"></path>
+<path d="M5.3 38A29 8 -8 0 1 62.7 30" fill="none" stroke="url(#wm)" stroke-width="3.8" stroke-linecap="round"></path>
+<path d="M12 31.4A29 8 -8 0 1 34 26.6" fill="none" stroke="#fff6c8" stroke-width="1.1" stroke-linecap="round" opacity="0.9"></path>
+</g>
 </svg>
