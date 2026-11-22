@@ -112,6 +112,15 @@ void main() {
     float tip = aUv.x * aUv.x;
     world.x += sin(uTime * 1.7 + aUv.x * 5.0 + world.y * 9.0) * uSway * tip;
     world.z += cos(uTime * 1.3 + aUv.x * 4.0) * uSway * 0.6 * tip;
+  } else if (uSway < 0.0) {
+    // A smoke shell round the soul (negative sway marks one): its surface swells and sinks in slow lumps, like
+    // jelly, and the crown drifts up and over to one side the way smoke leaves a flame.
+    float amp = -uSway;
+    float up = max(0.0, aPos.y);
+    float lump = sin(uTime * 2.1 + aPos.y * 5.0 + aPos.x * 3.0) * 0.5 + sin(uTime * 1.37 + aPos.x * 6.0 + aPos.z * 4.0 + 1.7) * 0.5;
+    world.xyz += normalize(uNormal * aNrm) * amp * (lump + 0.5);
+    world.y += amp * 2.4 * up * up;
+    world.x += amp * up * up * (1.3 + 1.2 * sin(uTime * 0.9 + aPos.y * 3.0));
   }
   vec4 view = uView * world;
   vWorld = world.xyz;
@@ -216,20 +225,26 @@ void main() {
     vec3 Vw = normalize(uCam - vWorld);
     float a;
     if (uWrap > 0.5) {
-      float rim = pow(1.0 - abs(dot(normalize(vNrm), Vw)), 2.2);
-      float swirl = fbm(vWorld.xy * 14.0 + vec2(uTime * 0.25, -uTime * 0.6));
-      a = rim * (0.45 + 0.75 * swirl) + 0.05 * swirl;
+      // Smoke, not an outline: strongest a little inside the silhouette and gone at the very edge, broken into
+      // drifting puffs by slow noise that rises, with finer noise on top.
+      float f = 1.0 - abs(dot(normalize(vNrm), Vw));
+      float band = smoothstep(0.08, 0.55, f) * (1.0 - smoothstep(0.68, 1.0, f));
+      float slow = fbm(vWorld.xy * 9.0 + vec2(uTime * 0.12, -uTime * 0.45));
+      float fine = fbm(vWorld.xy * 23.0 + vec2(-uTime * 0.2, -uTime * 0.7));
+      float crown = mix(0.3, 1.0, smoothstep(-0.5, 0.6, normalize(vNrm).y)); // thicker where it rises off the top
+      a = band * crown * smoothstep(0.34, 0.76, slow * 0.7 + fine * 0.3) + 0.03 * band;
     } else {
       float across = 1.0 - abs(vUv.y * 2.0 - 1.0);
-      float soft = smoothstep(0.0, 0.85, across);
-      float n = fbm(vec2(vUv.x * 3.2 - uTime * 0.85, vUv.y * 2.4 + uTime * 0.15) + vWorld.xz * 3.0);
-      float tendril = smoothstep(0.3, 0.78, n);
-      float fade = smoothstep(0.0, 0.14, vUv.x) * (1.0 - smoothstep(0.45, 1.0, vUv.x));
-      a = soft * fade * (0.25 + 0.95 * tendril);
+      float soft = smoothstep(0.0, 1.0, across);
+      soft *= soft;
+      float n = fbm(vec2(vUv.x * 2.4 - uTime * 0.7, vUv.y * 0.9 + uTime * 0.12) + vWorld.xz * 3.0);
+      float tendril = smoothstep(0.2, 0.8, n);
+      float fade = smoothstep(0.0, 0.3, vUv.x) * (1.0 - smoothstep(0.2, 0.8, vUv.x));
+      a = soft * fade * (0.45 + 0.6 * tendril);
     }
     // blue light that only turns white where the wisps are densest
     vec3 core = mix(uTint, vec3(0.85, 0.97, 1.0), clamp(a * a * 0.55, 0.0, 1.0));
-    oColor = vec4(core * a * uEmissive * (uWrap > 0.5 ? 0.3 : 0.4), 1.0);
+    oColor = vec4(core * a * uEmissive * (uWrap > 0.5 ? 0.2 : 0.2), 1.0);
     oDepth = vec4(0.0);
     return;
   }
@@ -2435,19 +2450,22 @@ export function startPodRoom(
     const GLOW: V3 = [0.22, 0.62, 1.0];
     const wisps: [number[], number[], number[], number, number][] = [
       // root, bend, tip (x, y, z), root width, sway
-      [[0.02, 0.17, 0.05], [0.16, 0.44, 0.08], [0.46, 0.5, 0.02], 0.17, 0.03],
-      [[0.1, 0.13, 0.06], [0.32, 0.3, 0.1], [0.56, 0.24, 0.04], 0.12, 0.025],
-      [[-0.05, 0.18, 0.04], [-0.02, 0.46, 0.06], [0.22, 0.66, 0.0], 0.13, 0.035],
-      [[0.16, 0.07, 0.07], [0.38, 0.12, 0.1], [0.6, 0.02, 0.05], 0.09, 0.02],
-      [[-0.12, 0.15, 0.03], [-0.26, 0.38, 0.05], [-0.1, 0.58, 0.0], 0.08, 0.03],
-      [[0.06, 0.2, -0.02], [0.1, 0.36, -0.04], [0.3, 0.42, -0.06], 0.1, 0.02],
+      // short and broad: curls of smoke that stay close to the crown, not spikes
+      [[0.02, 0.19, 0.05], [0.08, 0.33, 0.07], [0.22, 0.4, 0.04], 0.32, 0.03],
+      [[0.1, 0.16, 0.06], [0.2, 0.26, 0.08], [0.33, 0.27, 0.05], 0.28, 0.025],
+      [[-0.06, 0.19, 0.04], [-0.08, 0.33, 0.05], [0.04, 0.43, 0.02], 0.27, 0.03],
+      [[0.16, 0.1, 0.07], [0.27, 0.15, 0.09], [0.37, 0.11, 0.06], 0.22, 0.02],
     ];
     for (const [p0, p1, p2, w, sway] of wisps) {
       const k3 = (p: number[]) => p.map((v) => v * K);
       const mesh = upload(gl, ribbonMesh(k3(p0), k3(p1), k3(p2), w * K));
       soul.push(D(mesh, 11, GLOW, C[0], C[1], C[2], 1, 1, 1, { wrap: 0, wisp: true, sway: sway * K, ...live }));
     }
-    soul.push(D(ball, 11, GLOW, C[0], C[1], C[2], R * 1.22, R * 1.22, R * 1.22, { wrap: 1, wisp: true, ...live }));
+    // three nested smoke shells, each larger, fainter and looser than the last, so the edge has no single outline
+    for (const [scale, dim, loose] of [[1.1, 1, 0.012], [1.24, 0.7, 0.022], [1.4, 0.45, 0.034]]) {
+      const tint: V3 = [GLOW[0] * dim, GLOW[1] * dim, GLOW[2] * dim];
+      soul.push(D(ball, 11, tint, C[0], C[1], C[2], R * scale, R * scale, R * scale, { wrap: 1, wisp: true, sway: -loose * K, ...live }));
+    }
   }
 
   const draws: Draw[] = [
