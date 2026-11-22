@@ -222,10 +222,20 @@ void main() {
   // Kind 11: soul light, drawn in its own additive pass after the solid scene. Ribbons (uWrap 0) are wisps: soft across
   // their width, fading in at the root and out at the tip, with flowing noise that streams toward the tip. The shell
   // (uWrap 1) is a translucent aura: bright at the rim, nearly clear face-on. Output is light, so bloom makes it glow.
-  if (uKind > 10.5) {
+  if (uKind > 10.5 && uKind < 11.5) {
     vec3 Vw = normalize(uCam - vWorld);
     float a;
-    if (uWrap > 0.5) {
+    if (uWrap > 1.5) {
+      // The halo: light spilling off the orb into the air. This shell is bigger than the orb (uMetal is the orb's
+      // radius as a fraction of the shell's), so for each ray the distance past the orb's edge is known, and the glow
+      // falls away with it: brightest hugging the silhouette, gone well before the shell's own edge.
+      float nvh = abs(dot(normalize(vNrm), Vw));
+      float d = sqrt(max(0.0, 1.0 - nvh * nvh));
+      float past = max(0.0, d - uMetal) / (1.0 - uMetal);
+      float breathe = 0.85 + 0.15 * sin(uTime * 1.3);
+      // no line at the body's edge: the glow fades in just outside it and falls away, so there is no outline
+      a = exp(-past * 4.5) * smoothstep(0.0, 0.03, past) * (1.0 - smoothstep(0.7, 1.0, past)) * step(uMetal, d) * 0.8 * breathe;
+    } else if (uWrap > 0.5) {
       // Smoke, not an outline: strongest a little inside the silhouette and gone at the very edge, broken into
       // drifting puffs by slow noise that rises, with finer noise on top.
       float f = 1.0 - abs(dot(normalize(vNrm), Vw));
@@ -246,12 +256,38 @@ void main() {
       // the tip dissolves into the noise instead of ending in a point
       float tipEdge = 0.35 + 0.5 * n;
       float fade = smoothstep(0.0, 0.25, vUv.x) * (1.0 - smoothstep(tipEdge - 0.3, tipEdge + 0.35, vUv.x));
-      a = soft * fade * (0.3 + 0.5 * tendril) * (0.45 + 0.8 * streak);
+      a = soft * fade * (0.5 + 0.5 * tendril) * (0.75 + 0.5 * streak);
     }
     // blue light that only turns white where the wisps are densest
     vec3 core = mix(uTint, vec3(0.85, 0.97, 1.0), clamp(a * a * 0.55, 0.0, 1.0));
-    oColor = vec4(core * a * uEmissive * (uWrap > 0.5 ? 0.2 : 0.2), 1.0);
+    oColor = vec4(core * a * uEmissive * (uWrap > 0.5 ? 0.2 : 0.3), 1.0);
     oDepth = vec4(0.0);
+    return;
+  }
+  // Kind 12: the soul's body: a soft, pale spirit flame that is lit from inside. Its currents are sampled a little
+  // way inside the surface (along the view ray), so they slide against the outline as it moves.
+  if (uKind > 11.5) {
+    vec3 n = normalize(vNrm);
+    vec3 V = normalize(uCam - vWorld);
+    float nv = clamp(dot(n, V), 0.0, 1.0);
+    float r = sqrt(1.0 - nv * nv); // 0 facing the eye, 1 at the outline
+    vec3 inside = vWorld + refract(-V, n, 0.75) * uRough;
+    float deepA = fbm(inside.xy * 8.0 + inside.zx * 5.0 + vec2(-uTime * 0.05, -uTime * 0.28));
+    float deepB = fbm(inside.yx * 15.0 + vec2(uTime * 0.1, uTime * 0.16));
+    float wob = (deepA - 0.5) * 0.5 + (deepB - 0.5) * 0.22;
+    vec3 light = vec3(0.8, 0.95, 1.0);
+    vec3 hot = mix(uTint, light, 0.3) * (0.9 + 0.3 * deepB);
+    vec3 dark = uTint * vec3(0.1, 0.22, 0.6);
+    // the way these are painted: a dark heart with a wide band of burning light round it
+    float heart = 1.0 - smoothstep(0.2, 0.62, r + wob);
+    vec3 col = mix(hot, dark * 1.3, heart * 0.9);
+    // smooth skin, no plates or cracks: only a slightly deeper blue where it turns away
+    col = mix(col, uTint * 0.8, smoothstep(0.8, 1.0, r) * 0.5);
+    // the wisp burns brightest toward its tip
+    col = mix(col, mix(uTint, light, 0.35), smoothstep(0.6, 0.95, vUv.x) * 0.8);
+    oColor = vec4(col * mix(1.0, uEmissive, 0.1), 1.0);
+    vec3 vn12 = normalize(mat3(uView) * n);
+    oDepth = vec4(vViewZ / 20.0, vn12 * 0.5 + 0.5);
     return;
   }
   if (uDisc > 0.5 && length(vUv - 0.5) > 0.5) discard;
@@ -943,6 +979,83 @@ function curvedPanel(R: number, arc: number, h: number, off = 0, depth = 0, segs
     for (const [t, s] of [[tA, -1], [-tA, 1]]) {
       const back = off - depth;
       b.face([P(t, -h / 2, off), P(t, -h / 2, back), P(t, h / 2, back), P(t, h / 2, off)], [s * Math.cos(t), 0, s * Math.sin(t)], UV, 1, 1);
+    }
+  }
+  return b.finish();
+}
+
+/**
+ * The soul's body as one skin: a unit globe whose crown draws up into a soft flame tip that curls over to one side,
+ * the way a spirit flame is drawn. It is a single surface swept along a spine (straight up through the globe, then
+ * bending over), so the tip grows out of the body instead of sitting on it. Texture u runs from the base (0) to
+ * the tip (1).
+ */
+function soulMesh(sub = 64, slices = 40): CpuMesh {
+  const b = new Builder();
+  // the spine: up the globe's axis, then leaning and curling over toward +x
+  const spine = (t: number): number[] => {
+    if (t < 0.55) return [0, -1 + (t / 0.55) * 1.93, 0];
+    const k = (t - 0.55) / 0.45;
+    // an S: up and over to one side, then flicking back at the very end
+    return [0.55 * Math.sin(k * 2.6) * k + 0.1 * k, 0.93 + 1.05 * k - 0.25 * k * k, 0];
+  };
+  // the radius: the globe's own profile nearly to its crown, then a quick flare into a long thin wisp
+  const radius = (t: number): number => {
+    if (t < 0.55) {
+      const y = -1 + (t / 0.55) * 1.93;
+      return Math.sqrt(Math.max(0, 1 - y * y));
+    }
+    const k = (t - 0.55) / 0.45;
+    return 0.368 * Math.pow(1 - k, 1.1) * (0.45 + 0.55 * Math.exp(-k * 7.0));
+  };
+  const unit = (v: number[]) => {
+    const l = Math.hypot(v[0], v[1], v[2]) || 1;
+    return [v[0] / l, v[1] / l, v[2] / l];
+  };
+  const crs = (a: number[], c: number[]) => [a[1] * c[2] - a[2] * c[1], a[2] * c[0] - a[0] * c[2], a[0] * c[1] - a[1] * c[0]];
+  const sub3 = (a: number[], c: number[]) => [a[0] - c[0], a[1] - c[1], a[2] - c[2]];
+  const C: number[][] = [], P: number[][][] = [];
+  for (let i = 0; i <= sub; i++) {
+    const t = i / sub;
+    const c = spine(t);
+    const tan = unit(sub3(spine(Math.min(1, t + 0.004)), spine(Math.max(0, t - 0.004))));
+    const side = unit(crs(tan, [0, 0, 1])); // the spine stays in the xy plane, so z is always a safe reference
+    const r = i === 0 || i === sub ? 0.0005 : radius(t);
+    const row: number[][] = [];
+    for (let j = 0; j <= slices; j++) {
+      const th = (j / slices) * Math.PI * 2;
+      row.push([c[0] + (side[0] * Math.cos(th)) * r, c[1] + (side[1] * Math.cos(th)) * r, c[2] + Math.sin(th) * r]);
+    }
+    C.push(c);
+    P.push(row);
+  }
+  const grid: number[][] = [];
+  for (let i = 0; i <= sub; i++) {
+    const row: number[] = [];
+    for (let j = 0; j <= slices; j++) {
+      const a = P[Math.min(sub, i + 1)][j], c = P[Math.max(0, i - 1)][j];
+      const e = P[i][(j + 1) % slices], f = P[i][(j - 1 + slices) % slices];
+      let nr = crs(sub3(e, f), sub3(a, c));
+      const out = sub3(P[i][j], C[i]);
+      if (Math.hypot(nr[0], nr[1], nr[2]) < 1e-9) nr = i === 0 ? [0, -1, 0] : out;
+      if (nr[0] * out[0] + nr[1] * out[1] + nr[2] * out[2] < 0) nr = [-nr[0], -nr[1], -nr[2]];
+      row.push(b.vert(P[i][j], nr, [i / sub, j / slices], 1, 0));
+    }
+    grid.push(row);
+  }
+  for (let i = 0; i < sub; i++) {
+    for (let j = 0; j < slices; j++) {
+      const ii = Math.max(1, Math.min(sub - 2, i));
+      const p0 = P[ii][j], p1 = P[ii + 1][j], p2 = P[ii][j + 1];
+      const fn = crs(sub3(p1, p0), sub3(p2, p0));
+      const out = sub3(p0, C[ii]);
+      if (fn[0] * out[0] + fn[1] * out[1] + fn[2] * out[2] >= 0) {
+        b.tri(grid[i][j], grid[i + 1][j], grid[i][j + 1]);
+        b.tri(grid[i][j + 1], grid[i + 1][j], grid[i + 1][j + 1]);
+      } else {
+        b.tri(grid[i][j], grid[i][j + 1], grid[i + 1][j]);
+        b.tri(grid[i][j + 1], grid[i + 1][j + 1], grid[i + 1][j]);
+      }
     }
   }
   return b.finish();
@@ -2642,9 +2755,9 @@ export function startPodRoom(
     );
   }
 
-  // ---------- Ask WM3: a soul. A pale, glowing orb sewn together with stitched seams, a great screw
-  // driven through its crown and wisps streaming off the top. A nod to Soul Eater, built from primitives (no
-  // character, no traced art). Every part bobs in step and lifts together on hover. ----------
+  // ---------- Ask WM3: Max's soul. A globe of soul-blue light, lit by the room, with energy turning inside it, a halo
+  // of light spilling into the air and soul light streaming off the crown. No face, no ring, no tail stuck on top:
+  // the face lives on the favicon only. Original artwork. Every part bobs in step and lifts on hover. ----------
   const soul: Draw[] = [];
   {
     const C = [-0.33, 0.37, 0.4] as const;
@@ -2652,100 +2765,13 @@ export function startPodRoom(
     const K = R / 0.21; // every fixed size below was drawn for a 0.21 orb
     const live = { bob: 0.02, phase: 1.2, follow: 'ask' as const, jelly: C };
     type V3 = [number, number, number];
-    const norm = (v: V3): V3 => {
-      const l = Math.hypot(v[0], v[1], v[2]) || 1;
-      return [v[0] / l, v[1] / l, v[2] / l];
-    };
-    const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-    /** The renderer's rx, ry, rz for a part whose local x, y, z axes should point along ax, ay, az. */
-    const facing = (ax: V3, ay: V3, az: V3) => euler([[ax[0], ay[0], az[0]], [ax[1], ay[1], az[1]], [ax[2], ay[2], az[2]]]);
-    const at3 = (n: V3, r: number): V3 => [C[0] + n[0] * r, C[1] + n[1] * r, C[2] + n[2] * r];
-    soul.push(D(ball, 1, [0.5, 0.8, 1], C[0], C[1], C[2], R, R, R, { rough: 0.3, wrap: 0.95, bob: 0.02, phase: 1.2, anchor: 'ask', anchorDy: -0.2, jelly: C }));
-    // seams: each runs over the orb through three points; a dark thread with pale cross-stitches every few degrees
-    const THREAD: V3 = [0.2, 0.22, 0.26];
-    const STITCH: V3 = [0.95, 0.92, 0.8];
-    const seams: [V3, V3, V3][] = [
-      [[-0.12, 0.97, 0.2], [0.22, 0.12, 0.96], [0.5, -0.82, 0.28]],
-      [[-0.8, 0.52, 0.3], [-0.5, 0.0, 0.87], [-0.12, -0.55, 0.83]],
-      [[0.45, 0.84, 0.3], [0.78, 0.25, 0.57], [0.93, -0.3, 0.2]],
-    ];
-    for (const [a, m, b] of seams) {
-      const pts: V3[] = [];
-      const N = 22;
-      for (let k = 0; k <= N; k++) {
-        const t = k / N;
-        // a quadratic blend through the middle point, pushed back out onto the sphere
-        const w0 = (1 - t) * (1 - t);
-        const w1 = 2 * t * (1 - t) * 1.6;
-        const w2 = t * t;
-        pts.push(norm([a[0] * w0 + m[0] * w1 + b[0] * w2, a[1] * w0 + m[1] * w1 + b[1] * w2, a[2] * w0 + m[2] * w1 + b[2] * w2]));
-      }
-      for (let k = 0; k < N; k++) {
-        const n = norm([pts[k][0] + pts[k + 1][0], pts[k][1] + pts[k + 1][1], pts[k][2] + pts[k + 1][2]]);
-        if (n[2] < 0.32) continue; // nothing on the rim: thread seen edge-on reads as bumps on the outline
-        const along = norm([pts[k + 1][0] - pts[k][0], pts[k + 1][1] - pts[k][1], pts[k + 1][2] - pts[k][2]]);
-        const across = cross(n, along);
-        const len = Math.hypot(pts[k + 1][0] - pts[k][0], pts[k + 1][1] - pts[k][1], pts[k + 1][2] - pts[k][2]) * R;
-        const q = at3(n, R + 0.001 * K);
-        soul.push(D(box, 2, THREAD, q[0], q[1], q[2], len * 1.15, 0.005 * K, 0.004 * K, { ...facing(along, across, n), rough: 0.8, ...live }));
-        if (k % 2 === 0) {
-          const s2 = at3(n, R + 0.003 * K);
-          // most stitches lie straight across the seam; every fifth is a cross
-          soul.push(D(box, 2, STITCH, s2[0], s2[1], s2[2], 0.04 * K, 0.011 * K, 0.006 * K, { ...facing(across, along, n), rough: 0.7, ...live }));
-          if (k % 10 === 4) {
-            const d1 = norm([across[0] + along[0], across[1] + along[1], across[2] + along[2]]);
-            soul.push(D(box, 2, STITCH, s2[0], s2[1], s2[2], 0.04 * K, 0.011 * K, 0.007 * K, { ...facing(d1, cross(n, d1), n), rough: 0.7, ...live }));
-          }
-        }
-      }
-    }
-    // the screw: a slotted head on a thick shaft, driven in at the upper left
-    {
-      const STEEL: V3 = [0.2, 0.23, 0.26];
-      const axis = norm([-0.62, 0.72, 0.3]);
-      const u = norm(cross([0, 0, 1], axis));
-      const v = cross(u, axis);
-      const neg = (w: V3): V3 => [-w[0], -w[1], -w[2]];
-      const tubeRot = facing(u, axis, v);
-      const shaft = at3(axis, R + 0.03 * K);
-      const head = at3(axis, R + 0.105 * K);
-      const headTop = at3(axis, R + (0.105 + 0.0275) * K);
-      const headBottom = at3(axis, R + (0.105 - 0.0275) * K);
-      soul.push(
-        D(tube, 2, STEEL, shaft[0], shaft[1], shaft[2], 0.07 * K, 0.1 * K, 0.07 * K, { ...tubeRot, rough: 0.45, ...live }),
-        D(tube, 2, STEEL, head[0], head[1], head[2], 0.2 * K, 0.055 * K, 0.2 * K, { ...tubeRot, rough: 0.4, ...live }),
-        D(coin, 2, [0.26, 0.29, 0.33], headTop[0], headTop[1], headTop[2], 0.2 * K, 0.2 * K, 1, { ...facing(u, neg(v), axis), rough: 0.4, ...live }),
-        D(coin, 2, STEEL, headBottom[0], headBottom[1], headBottom[2], 0.2 * K, 0.2 * K, 1, { ...facing(u, v, neg(axis)), rough: 0.5, ...live }),
-        D(box, 2, [0.07, 0.08, 0.1], headTop[0] + axis[0] * 0.002, headTop[1] + axis[1] * 0.002, headTop[2] + axis[2] * 0.002, 0.18 * K, 0.006 * K, 0.026 * K, { ...facing(u, axis, v), rough: 0.8, ...live }),
-      );
-    }
-    // Soul light, Soul Eater style: translucent wisps streaming off the crown and curling away, and a faint aura
-    // round the orb. They are light, not material (kind 11, the additive glow pass), so they glow, bloom, overlap
-    // softly and flow; their tips sway. Coordinates are in 0.21-orb units, relative to the orb's centre.
-    const GLOW: V3 = [0.22, 0.62, 1.0];
-    const wisps: [number[], number[], number[], number, number][] = [
-      // root, bend, tip (x, y, z), root width, sway
-      // short and broad: curls of smoke that stay close to the crown, not spikes
-      [[0.02, 0.19, 0.05], [0.08, 0.33, 0.07], [0.22, 0.4, 0.04], 0.32, 0.03],
-      [[0.1, 0.16, 0.06], [0.2, 0.26, 0.08], [0.33, 0.27, 0.05], 0.28, 0.025],
-      [[-0.06, 0.19, 0.04], [-0.08, 0.33, 0.05], [0.04, 0.43, 0.02], 0.27, 0.03],
-      [[0.16, 0.1, 0.07], [0.27, 0.15, 0.09], [0.37, 0.11, 0.06], 0.22, 0.02],
-      // thin trailing strands that curl up and away, faint, and dissolve rather than end
-      [[0.0, 0.2, 0.0], [0.12, 0.46, 0.02], [0.34, 0.56, -0.02], 0.12, 0.05],
-      [[0.06, 0.18, -0.04], [0.02, 0.44, -0.06], [0.18, 0.62, -0.04], 0.1, 0.06],
-      [[-0.08, 0.17, 0.02], [-0.2, 0.36, 0.04], [-0.12, 0.55, 0.0], 0.1, 0.05],
-      [[0.14, 0.14, -0.02], [0.32, 0.3, -0.03], [0.46, 0.32, 0.0], 0.1, 0.045],
-      [[-0.12, 0.12, 0.06], [-0.26, 0.22, 0.08], [-0.3, 0.4, 0.05], 0.09, 0.04],
-    ];
-    for (const [p0, p1, p2, w, sway] of wisps) {
-      const k3 = (p: number[]) => p.map((v) => v * K);
-      const mesh = upload(gl, ribbonMesh(k3(p0), k3(p1), k3(p2), w * K));
-      soul.push(D(mesh, 11, GLOW, C[0], C[1], C[2], 1, 1, 1, { wrap: 0, wisp: true, sway: sway * K, ...live }));
-    }
-    // three nested smoke shells, each larger, fainter and looser than the last, so the edge has no single outline
-    for (const [scale, dim, loose] of [[1.1, 1, 0.012], [1.24, 0.7, 0.022], [1.4, 0.45, 0.034]]) {
-      const tint: V3 = [GLOW[0] * dim, GLOW[1] * dim, GLOW[2] * dim];
-      soul.push(D(ball, 11, tint, C[0], C[1], C[2], R * scale, R * scale, R * scale, { wrap: 1, wisp: true, sway: -loose * K, ...live }));
+    // the body: one skin, globe and flame tip together (kind 12). rough is how far inside its currents sit; the
+    // positive sway makes the tip waver like a flame while the globe holds still.
+    const body = upload(gl, soulMesh());
+    soul.push(D(body, 12, [0.1, 0.5, 1.0], C[0], C[1], C[2], R, R, R, { rough: R * 0.6, sway: 0.03 * K, bob: 0.02, phase: 1.2, anchor: 'ask', anchorDy: -0.2, jelly: C }));
+    // the halo: two shells of pure falloff, light spilling into the air round the globe
+    for (const [scale, dim] of [[1.9, 0.16], [2.8, 0.05]]) {
+      soul.push(D(ball, 11, [0.22 * dim, 0.62 * dim, 1.0 * dim], C[0], C[1], C[2], R * scale, R * scale, R * scale, { wrap: 2, metal: 1 / scale, wisp: true, ...live }));
     }
   }
 
