@@ -653,56 +653,77 @@
 
 .tabbar { display: none; }
 @media (max-width: 760px) {
+  /* a dynamic island: a compact pill centred at the bottom, icons only, the current section stretching out to
+     show its name */
   .tabbar {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 50%;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100vw - 24px);
     z-index: 200;
     font-family: 'Nunito', system-ui, sans-serif;
   }
   .tabbar__pill {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     gap: 2px;
-    padding: 6px;
+    padding: 5px;
     border-radius: 999px;
-    background: rgba(24, 20, 18, 0.72);
+    background: rgba(18, 15, 13, 0.78);
     border: 1px solid rgba(255, 246, 229, 0.14);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    -webkit-backdrop-filter: blur(20px) saturate(1.5);
-    backdrop-filter: blur(20px) saturate(1.5);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    backdrop-filter: blur(22px) saturate(1.6);
   }
   .tabbar__tab {
-    flex: 1 1 0;
-    min-width: 0;
-    min-height: 54px;
+    box-sizing: border-box;
+    flex: none;
+    height: 48px;
+    min-width: 48px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    padding: 0;
+    gap: 0;
+    padding: 0 12px;
     border: 0;
     border-radius: 999px;
     background: transparent;
-    color: rgba(255, 246, 229, 0.72);
-    font: 800 11px/1 'Nunito', system-ui, sans-serif;
+    color: rgba(255, 246, 229, 0.66);
+    font: 900 14px/1 'Nunito', system-ui, sans-serif;
     text-decoration: none;
+    white-space: nowrap;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: background 0.18s, color 0.18s;
+    transition: background 0.28s, color 0.28s, padding 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), gap 0.32s;
   }
-  .tabbar__tab[aria-current='page'] { background: rgba(255, 246, 229, 0.15); color: #fff6e5; }
-  .tabbar__tab[aria-expanded='true'] { color: #fff6e5; }
-  .tabbar__tab:active { transform: scale(0.96); }
+  .tabbar__tab span {
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-width 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s;
+  }
+  .tabbar__tab[aria-current='page'] {
+    gap: 7px;
+    padding: 0 16px 0 12px;
+    background: rgba(255, 246, 229, 0.15);
+    color: #fff6e5;
+  }
+  .tabbar__tab[aria-current='page'] span { max-width: 96px; opacity: 1; }
+  /* More, while its menu is open: lit, but it doesn't stretch (only the current section does) */
+  .tabbar__tab[aria-expanded='true'] { background: rgba(255, 246, 229, 0.1); color: #fff6e5; }
+  .tabbar__tab[aria-expanded='true'] span { max-width: 0; opacity: 0; }
+  .tabbar__tab:active { transform: scale(0.95); }
   .tabbar__tab:focus-visible { outline: 2px solid #ffe9a8; outline-offset: -2px; }
   .tabbar__more {
     list-style: none;
-    margin: 0 0 8px auto;
+    margin: 0 0 8px;
     padding: 6px;
-    width: min(260px, 100%);
+    width: min(280px, calc(100vw - 24px));
     border-radius: 22px;
     background: rgba(24, 20, 18, 0.86);
     border: 1px solid rgba(255, 246, 229, 0.14);
@@ -734,4 +755,5 @@
 }
 @media (max-width: 760px) and (prefers-reduced-motion: reduce) {
   .tabbar__more { animation: none; }
+  .tabbar__tab, .tabbar__tab span { transition: none; }
 }

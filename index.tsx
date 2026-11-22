@@ -14,3 +14,12 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// Installable as an app: register the service worker everywhere but localhost (in dev it would cache Vite's modules).
+if ('serviceWorker' in navigator && !['localhost', '127.0.0.1'].includes(location.hostname)) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // The site works the same without it; installing just won't be offered.
+    });
+  });
+}
