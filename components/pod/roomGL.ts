@@ -1705,9 +1705,19 @@ export function startPodRoom(
   const MM = 0.2 / 430;
   /** The sphere mesh has radius 1, so a ball's scale is half the size it should measure. */
   const BALL = 0.5;
+  const matPhoto = image('/assets/photos/desk-mat.jpg');
   const paints: Partial<Record<string, WebGLTexture>> = {
     mxKeys: paintTex(() => P.mxKeys()),
-    deskMat: paintTex(() => P.deskMat()),
+    // Max's real mat: his photo, perspective-flattened to the mat's 900x400 mm (public/assets/photos/desk-mat.jpg).
+    // Painted fallback until it loads; going through a canvas keeps the mipmaps, so the line art doesn't shimmer.
+    deskMat: paintTex(() => {
+      if (!matPhoto.complete || !matPhoto.naturalWidth) return P.deskMat();
+      const c = document.createElement('canvas');
+      c.width = matPhoto.naturalWidth;
+      c.height = matPhoto.naturalHeight;
+      c.getContext('2d')?.drawImage(matPhoto, 0, 0);
+      return c;
+    }),
     whiteboard: paintTex(() => P.whiteboard()),
   };
   const hexTint = (hex: string): [number, number, number] => {
