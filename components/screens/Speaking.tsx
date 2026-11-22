@@ -110,6 +110,7 @@ const Speaking: React.FC<Props> = () => (
       <ol className="spk-workshops">
         {WORKSHOPS.map((w, i) => (
           <li key={w.title} className="spk-ws">
+            <img className="spk-ws__slide" src={`/assets/workshops/${w.slide}.jpg`} alt={`Title slide of the ${w.title} deck`} width={960} height={540} loading="lazy" />
             <span className="spk-ws__n">{String(i + 1).padStart(2, '0')}</span>
             <h3>{w.title}</h3>
             <p>{w.covers}</p>

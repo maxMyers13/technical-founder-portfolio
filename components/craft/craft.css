@@ -484,6 +484,10 @@
   align-self: flex-start; font-family: 'Bagel Fat One', sans-serif; font-size: 18px; line-height: 1;
   padding: 5px 9px 4px; border-radius: 8px; background: var(--ink); color: var(--gold);
 }
+.spk-ws__slide {
+  position: relative; z-index: 1; display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover;
+  border: 2px solid var(--ink); border-radius: 9px; background: var(--ink); margin-bottom: 4px;
+}
 .spk-ws h3 { font-size: 19px !important; line-height: 1.15; }
 .spk-ws p { font-size: 14.5px; line-height: 1.5; color: var(--body); }
 

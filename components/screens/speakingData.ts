@@ -67,16 +67,16 @@ export const KIND_LABEL: Record<GigKind, string> = {
   guest: 'Guest',
 };
 
-/** The workshops in the catalog, in plain English. */
-export const WORKSHOPS: { title: string; covers: string }[] = [
-  { title: 'LinkedIn Crash Course: How to Make Recruiters Click Your Profile', covers: 'Winning the first glance, writing experience as evidence, showing your work, and how to run the search.' },
-  { title: 'Resume Repair Workshop', covers: 'Why the resume still matters, what to fix, cover letters and networking, then live critiques.' },
-  { title: 'AI Resumes That Land Interviews', covers: 'Why AI resume tailoring usually fails, and LILO’s 15-minute, five-step workflow, demoed live.' },
-  { title: 'LinkedIn & AI Job Application Workshop', covers: 'The LinkedIn Crash Course and AI resume tailoring back to back, half an hour each.' },
-  { title: 'Securing the Return Offer', covers: 'Before, during and after the internship: the search, the resume, LinkedIn, and negotiating the offer.' },
-  { title: 'Building Smarter with AI CLI Tools', covers: 'Why AI command-line tools matter, real builds, debugging with them, and the toolkit.' },
-  { title: 'Technical Writing as a Career Weapon: Documentation is Distribution', covers: 'Why engineers should post, building credibility, docs as content and as product, and where to publish.' },
-  { title: 'How to Build a Personal Project With AI That Actually Gets You Hired', covers: 'Picking what to build, building it with AI, and explaining your decisions in the interview.' },
+/** The workshops in the catalog, in plain English. `slide` is the deck's title slide in public/assets/workshops. */
+export const WORKSHOPS: { slide: string; title: string; covers: string }[] = [
+  { slide: 'linkedin-crash-course', title: 'LinkedIn Crash Course: How to Make Recruiters Click Your Profile', covers: 'Winning the first glance, writing experience as evidence, showing your work, and how to run the search.' },
+  { slide: 'resume-repair', title: 'Resume Repair Workshop', covers: 'Why the resume still matters, what to fix, cover letters and networking, then live critiques.' },
+  { slide: 'ai-resumes', title: 'AI Resumes That Land Interviews', covers: 'Why AI resume tailoring usually fails, and LILO’s 15-minute, five-step workflow, demoed live.' },
+  { slide: 'linkedin-and-ai', title: 'LinkedIn & AI Job Application Workshop', covers: 'The LinkedIn Crash Course and AI resume tailoring back to back, half an hour each.' },
+  { slide: 'return-offer', title: 'Securing the Return Offer', covers: 'Before, during and after the internship: the search, the resume, LinkedIn, and negotiating the offer.' },
+  { slide: 'ai-cli-tools', title: 'Building Smarter with AI CLI Tools', covers: 'Why AI command-line tools matter, real builds, debugging with them, and the toolkit.' },
+  { slide: 'technical-writing', title: 'Technical Writing as a Career Weapon: Documentation is Distribution', covers: 'Why engineers should post, building credibility, docs as content and as product, and where to publish.' },
+  { slide: 'personal-project', title: 'How to Build a Personal Project With AI That Actually Gets You Hired', covers: 'Picking what to build, building it with AI, and explaining your decisions in the interview.' },
 ];
 
 /** Formats Pathion runs on its own channels, the ones Max hosts or co-hosts. */
