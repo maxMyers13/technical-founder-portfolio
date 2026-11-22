@@ -1,198 +1,180 @@
 import React from 'react';
 import { EMAIL, SANDBOX_SLIDES, TALK_VIDEO_URL, TECHSGIVING_SLIDES } from '../../constants';
 import { Route } from '../../types';
-import PhotoFrame from '../ui/PhotoFrame';
-import { pageIntro, pageTitle, serif, solidButton } from '../ui/styles';
+import { FORMATS, GIGS, Gig, HOSTS, KIND_LABEL, WORKSHOPS } from './speakingData';
 
 interface Props {
   onNavigate: (route: Route) => void;
 }
 
-const Speaking: React.FC<Props> = ({ onNavigate }) => (
-  <main style={{ maxWidth: 1000, margin: '0 auto', padding: '84px 44px 128px' }}>
-    <a
-      href="#"
-      onClick={(e) => {
-        e.preventDefault();
-        onNavigate('life');
-      }}
-      className="h-ink"
-      style={serif(15)}
-    >
-      ← back to Life
-    </a>
-    <h1 className="craft-dup" style={pageTitle}>Speaking</h1>
-    <p style={{ ...pageIntro, maxWidth: 700 }}>
-      I give the talk I’d want to sit through: one hard technical decision, the numbers behind it,
-      and what broke. Conferences, podcasts, campus sessions and workshops.
-    </p>
+const PRINTS = [
+  { src: '/assets/photos/events/sreday-austin-2026.jpg', alt: 'Max in Austin wearing his SREday name tag', caption: 'SREday Austin · May 2026', tilt: -2.5 },
+  { src: '/assets/photos/events/afrotech-2026-meetup.jpg', alt: 'A large group at the Connect with Pathion meetup at AfroTech', caption: 'Pathion at AfroTech · Nov 2026', tilt: 1.8 },
+  { src: '/assets/photos/on-stage-room.jpg', alt: 'Max presenting to a full room at Techsgiving Summit 2025', caption: 'Techsgiving Summit · Dec 2025', tilt: -1.2 },
+  { src: '/assets/photos/the-team.jpg', alt: 'Max and three others in suits at AfroTech', caption: 'AfroTech · Oct 2025', tilt: 2.2 },
+  { src: '/assets/photos/on-stage-conference.jpg', alt: 'Max at the AfroTech conference wall', caption: 'AfroTech · Nov 2024', tilt: -1.6 },
+];
 
-    <div style={{ marginTop: 48, maxWidth: 520 }}>
-      <PhotoFrame
-        src="/assets/photos/on-stage-conference.jpg"
-        placeholder="Max speaking on stage"
-        caption="on stage · November 2024"
-        tilt={-0.8}
-        height={300}
-      />
-    </div>
+const delivered = GIGS.filter((g) => !g.upcoming);
+const firstYear = Math.min(...GIGS.map((g) => Number(g.sort.slice(0, 4))));
+const byYear = GIGS.slice()
+  .sort((a, b) => b.sort.localeCompare(a.sort))
+  .reduce<Record<string, Gig[]>>((acc, g) => {
+    (acc[g.sort.slice(0, 4)] ||= []).push(g);
+    return acc;
+  }, {});
+const years = Object.keys(byYear).sort().reverse();
 
-    <div
-      style={{
-        marginTop: 40,
-        border: '1px solid var(--line)',
-        borderRadius: 12,
-        overflow: 'hidden',
-        background: 'var(--card)',
-      }}
-    >
-      <div
-        style={{
-          background: 'var(--bg2)',
-          borderBottom: '1px solid var(--line)',
-          padding: 26,
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 16,
-        }}
-      >
-        <img
-          src="/assets/talk-costs.png"
-          alt="Projected costs slide"
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius: 6,
-            border: '1px solid var(--line)',
-          }}
-        />
-        <img
-          src="/assets/talk-fork.png"
-          alt="Architecture decision slide"
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius: 6,
-            border: '1px solid var(--line)',
-          }}
-        />
-      </div>
-      <div style={{ padding: 36, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <span style={serif(15)}>SRE Day 2026 · Seattle + Austin · invited</span>
-        <h3
-          style={{
-            fontSize: 30,
-            fontWeight: 800,
-            letterSpacing: '-.03em',
-            color: 'var(--ink)',
-          }}
-        >
-          Killing the Cloud Sandbox
-        </h3>
-        <p style={{ fontSize: 16, lineHeight: 1.6, color: 'var(--body)' }}>
-          How we moved language runtimes and AI inference off cloud servers and into the student’s
-          browser, eliminating per-execution cost: the cost model, the Java challenge, and the
-          on-device AI economics.
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 22, paddingTop: 6 }}>
-          <a
-            href={TALK_VIDEO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-underline"
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--ink)',
-              borderBottom: '1px solid var(--hair)',
-              paddingBottom: 2,
-            }}
-          >
-            Watch the talk
-          </a>
-          <a
-            href={SANDBOX_SLIDES}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-ink"
-            style={{ fontSize: 14, fontWeight: 600, color: 'var(--body)' }}
-          >
-            Download slides (PDF)
-          </a>
-        </div>
-      </div>
-    </div>
+const Speaking: React.FC<Props> = () => (
+  <main className="spk">
+    <h1 className="craft-dup">Speaking</h1>
 
-    <div
-      style={{
-        marginTop: 20,
-        border: '1px solid var(--line)',
-        borderRadius: 12,
-        background: 'var(--bg2)',
-        padding: 30,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-      }}
-    >
-      <span style={serif(15)}>Techsgiving Workshop · Dec 2025 · invited</span>
-      <h3
-        style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}
-      >
-        AI Resumes That Land Interviews
-      </h3>
-      <p style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--body)' }}>
-        A 15-minute workflow for tailoring a resume to a job description without fabricating a single
-        metric.
+    <section className="spk-intro">
+      <p className="spk-lede">
+        I give the talk I’d want to sit through: one hard technical decision, the numbers behind it, and what broke. Most
+        of it is workshops that leave a room with something finished: a rewritten resume, a sharper profile, a plan for a
+        project.
       </p>
-      <a
-        href={TECHSGIVING_SLIDES}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="h-underline"
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: 'var(--ink)',
-          alignSelf: 'flex-start',
-          borderBottom: '1px solid var(--hair)',
-          paddingBottom: 2,
-        }}
-      >
-        Download slides (PDF)
-      </a>
-    </div>
+      <ul className="spk-stats" aria-label="At a glance">
+        <li className="spk-stat spk-stat--red">
+          <b>{delivered.length}</b>
+          <span>sessions since {firstYear}</span>
+        </li>
+        <li className="spk-stat spk-stat--gold">
+          <b>{HOSTS.length}</b>
+          <span>hosts</span>
+        </li>
+        <li className="spk-stat spk-stat--teal">
+          <b>{WORKSHOPS.length}</b>
+          <span>workshops I teach</span>
+        </li>
+      </ul>
+    </section>
 
-    <div
-      style={{
-        marginTop: 60,
-        paddingTop: 36,
-        borderTop: '1px solid var(--ink)',
-        display: 'grid',
-        gridTemplateColumns: '180px 1fr',
-        gap: 44,
-      }}
-    >
-      <span style={serif(16)}>bio for programs</span>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <p style={{ fontSize: 18, lineHeight: 1.7, color: 'var(--ink)' }}>
-          Maxwell Myers is the co-founder and CEO of LinkedInOrLeftOut, where he’s building LILO —
-          coding education that runs language runtimes and an AI tutor entirely in the browser. He
-          spent five years in and around Microsoft Edge — three internships, then full-time on the
-          Web Platform team — leading the WebView2 Find on Page API end-to-end and working upstream
-          in Chromium’s media pipeline. He studied computer science at the University of Maryland,
-          where he also captained the Division I track and field team.
-        </p>
-        <a
-          data-m="btn"
-          href={`mailto:${EMAIL}`}
-          className="h-btn-solid"
-          style={{ ...solidButton, alignSelf: 'flex-start' }}
-        >
-          Invite me to speak
-        </a>
+    <section className="spk-hosts" aria-label="Hosts">
+      <h2 className="spk-mini">Booked by</h2>
+      <ul>
+        {HOSTS.map((h) => (
+          <li key={h}>{h}</li>
+        ))}
+      </ul>
+    </section>
+
+    <section className="spk-feature" aria-label="Featured">
+      <article className="spk-card spk-card--talk">
+        <img src="/assets/photos/events/sreday-austin-2026.jpg" alt="Max smiling in Austin, wearing his SREday name tag" loading="lazy" />
+        <div className="spk-card__body">
+          <span className="spk-kicker">Invited talk · SREday Seattle & Austin · 2026</span>
+          <h2>Killing the Cloud Sandbox</h2>
+          <p>
+            How LILO moved language runtimes and AI inference off cloud servers and into the student’s browser: the cost
+            model, the Java problem, and the economics of on-device AI.
+          </p>
+          <div className="spk-actions">
+            <a className="craft-btn spk-btn spk-btn--red" href={TALK_VIDEO_URL} target="_blank" rel="noopener noreferrer">
+              Watch the talk
+            </a>
+            <a className="craft-btn spk-btn" href={SANDBOX_SLIDES} target="_blank" rel="noopener noreferrer">
+              Slides (PDF)
+            </a>
+          </div>
+        </div>
+      </article>
+      <article className="spk-card spk-card--workshop">
+        <img src="/assets/photos/events/techsgiving-2025-demo.jpg" alt="Max holding up a phone demo at Techsgiving Summit 2025" loading="lazy" />
+        <div className="spk-card__body">
+          <span className="spk-kicker">Invited workshop · Techsgiving Summit · Dec 2025</span>
+          <h2>AI Resumes That Land Interviews</h2>
+          <p>LILO’s 15-minute AI workflow to land interviews in 30 days: why AI tailoring usually fails, and a live demo.</p>
+          <div className="spk-actions">
+            <a className="craft-btn spk-btn" href={TECHSGIVING_SLIDES} target="_blank" rel="noopener noreferrer">
+              Slides (PDF)
+            </a>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section className="spk-prints" aria-label="Photos">
+      {PRINTS.map((p) => (
+        <figure key={p.src} className="spk-print" style={{ rotate: `${p.tilt}deg` }}>
+          <img src={p.src} alt={p.alt} loading="lazy" />
+          <figcaption>{p.caption}</figcaption>
+        </figure>
+      ))}
+    </section>
+
+    <section className="spk-section">
+      <h2 className="spk-h">What I teach</h2>
+      <p className="spk-sub">Every workshop is taught from its own deck. Ask for one by name.</p>
+      <ol className="spk-workshops">
+        {WORKSHOPS.map((w, i) => (
+          <li key={w.title} className="spk-ws">
+            <span className="spk-ws__n">{String(i + 1).padStart(2, '0')}</span>
+            <h3>{w.title}</h3>
+            <p>{w.covers}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section className="spk-section">
+      <h2 className="spk-h">Every gig</h2>
+      <p className="spk-sub">Newest first. Workshops, talks, panels, and events I hosted.</p>
+      <div className="spk-years">
+        {years.map((y) => (
+          <div key={y} className="spk-year">
+            <h3 className="spk-year__label">{y}</h3>
+            <ul className="spk-gigs">
+              {byYear[y].map((g) => (
+                <li key={g.sort + g.title} className={`spk-gig${g.upcoming ? ' spk-gig--soon' : ''}`}>
+                  <span className="spk-gig__when">{g.when}</span>
+                  <span className="spk-gig__what">
+                    <b>{g.title}</b>
+                    <span>
+                      {g.host}
+                      {g.where ? ` · ${g.where}` : ''}
+                      {g.note ? ` · ${g.note}` : ''}
+                    </span>
+                  </span>
+                  <span className={`spk-chip spk-chip--${g.upcoming ? 'soon' : g.kind}`}>
+                    {g.upcoming ? 'Upcoming' : g.role ? g.role[0].toUpperCase() + g.role.slice(1) : KIND_LABEL[g.kind]}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
-    </div>
+    </section>
+
+    <section className="spk-section">
+      <h2 className="spk-h">On our own channels</h2>
+      <p className="spk-sub">Pathion’s recurring live formats, on YouTube, LinkedIn Live and Discord.</p>
+      <ul className="spk-formats">
+        {FORMATS.map((f) => (
+          <li key={f.title} className="spk-format">
+            <h3>{f.title}</h3>
+            <p>{f.what}</p>
+            <span>{f.when}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section className="spk-bio">
+      <h2 className="spk-h">Bio for programs</h2>
+      <p>
+        Maxwell Myers is the co-founder and CEO of LinkedInOrLeftOut, where he’s building LILO: coding education that runs
+        language runtimes and an AI tutor entirely in the browser. He spent five years in and around Microsoft Edge, three
+        internships and then full-time on the Web Platform team, leading the WebView2 Find on Page API end to end and
+        working upstream in Chromium’s media pipeline. He studied computer science at the University of Maryland, where he
+        also captained the Division I track and field team.
+      </p>
+      <a className="craft-btn spk-btn spk-btn--red spk-btn--big" href={`mailto:${EMAIL}?subject=Speaking%20invite`}>
+        Invite me to speak
+      </a>
+    </section>
   </main>
 );
 
