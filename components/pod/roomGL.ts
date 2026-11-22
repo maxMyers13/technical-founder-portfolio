@@ -7,6 +7,7 @@
 import { WorldId } from './worlds';
 import { worldMapWhenFontsReady } from './worldMap';
 import * as P from './propTextures';
+import { feature } from './features';
 import { routeMap, singletFabric } from './artTextures';
 import { BOOKS, RECORDS, SHELF_TOPICS, bookLink, clothFor, isOwn, nowReading } from './books';
 import { GAMES, caseFor } from './games';
@@ -2176,8 +2177,8 @@ export function startPodRoom(
       D(box, 2, [0.01, 0.01, 0.01], notch.x, notch.y, notch.z, 0.022, 0.008, 0.001, { ry: mbRy, rx: -lean, rough: 0.3 }),
     );
   }
-  // rubber duck (debugging) and the Pathion mug (logo faces the room), at real size like the measured props:
-  // a 60 mm duck and an 82 mm mug at the same millimetre scale
+  // rubber duck (debugging) and a can of Red Bull, at real size like the measured props:
+  // a 60 mm duck and a 135 mm can at the same millimetre scale
   const dx = deskX - 0.12;
   const dz = deskZ + 0.085;
   const DK = 0.33; // ball scales are radii: this makes the duck 60 mm long
@@ -2188,14 +2189,16 @@ export function startPodRoom(
     D(ball, 2, [0.05, 0.05, 0.05], dx - 0.01 * DK, deskTop + 0.066 * DK, dz + 0.034 * DK, 0.004 * DK, 0.004 * DK, 0.004 * DK, { rough: 0.2 }),
     D(ball, 2, [0.05, 0.05, 0.05], dx + 0.01 * DK, deskTop + 0.066 * DK, dz + 0.034 * DK, 0.004 * DK, 0.004 * DK, 0.004 * DK, { rough: 0.2 }),
   );
-  const mugTex = paintTex(() => P.mugWrap(logo));
-  const mugX = deskX - 0.32;
-  const mugZ = deskZ + 0.1;
-  const MG = 0.7;
+  // a 250 ml can of Red Bull where the mug was: 53 mm across, 135 mm tall, an aluminium lid with a ring pull
+  const canTex = paintTex(() => P.energyCanWrap());
+  const canX = deskX - 0.32;
+  const canZ = deskZ + 0.1;
+  const CAN_D = 53 * (0.2 / 430);
+  const CAN_H = 135 * (0.2 / 430);
   add(
-    D(tube, 2, [1, 1, 1], mugX, deskTop + 0.035 * MG, mugZ, 0.055 * MG, 0.07 * MG, 0.055 * MG, { tex: mugTex, ry: -Math.PI / 2, rough: 0.25 }),
-    D(coin, 2, [0.24, 0.14, 0.08], mugX, deskTop + 0.064 * MG, mugZ, 0.05 * MG, 0.05 * MG, 1, { rx: -Math.PI / 2, rough: 0.1 }),
-    D(box, 2, [0.95, 0.95, 0.93], mugX + 0.035 * MG, deskTop + 0.035 * MG, mugZ, 0.014 * MG, 0.04 * MG, 0.008 * MG, { rough: 0.25 }),
+    D(tube, 2, [1, 1, 1], canX, deskTop + CAN_H / 2, canZ, CAN_D, CAN_H, CAN_D, { tex: canTex, ry: -Math.PI / 2, rough: 0.2, metal: 0.4 }),
+    D(coin, 2, [0.78, 0.8, 0.83], canX, deskTop + CAN_H, canZ, CAN_D * 0.92, CAN_D * 0.92, 1, { rx: -Math.PI / 2, rough: 0.3, metal: 1 }),
+    D(box, 2, [0.7, 0.72, 0.75], canX + CAN_D * 0.15, deskTop + CAN_H + 0.0006, canZ, CAN_D * 0.35, 0.0008, CAN_D * 0.18, { rough: 0.3, metal: 1 }),
   );
   // the sack-doll plush, sitting on top of the PC
   const BURLAP: [number, number, number] = [0.74, 0.6, 0.42];
@@ -2230,12 +2233,12 @@ export function startPodRoom(
     };
     const matLift = LOOT['desk-mat'].size[1] * MM;
     onDesk('desk-mat', 0.265, 0.06);
-    onDesk('mx-keys', kbX, 0.07, 0, matLift);
-    onDesk('mx-master', kbX + 0.135, 0.075, 0.1, matLift);
+    const keys = onDesk('mx-keys', kbX, 0.07, 0, matLift);
+    const mouse = onDesk('mx-master', kbX + 0.135, 0.075, 0.1, matLift);
     const pad = onDesk('macro-pad', 0.015, 0.075, 0.12);
     const studio = onDesk('echo-studio', pcX + 0.165, 0.05);
-    // the docked Switch sits in the open, between the monitors and the laptop; the router hides behind the laptop
-    const sw = onDesk('switch-oled', 0.44, -0.1, -0.15);
+    // the docked Switch sits in the open middle of the desk, between the two monitors, so it shows from the room and from above
+    const sw = onDesk('switch-oled', -0.1, 0.0, 0);
     const gc = onDesk('gc-controller', -0.215, 0.085, 0.3);
     const orbi = onDesk('orbi-router', 0.70, -0.13, -0.25);
     // the rolling whiteboard stands in the front-left corner, beside the PC end of the desk, clear of the controller
@@ -2243,50 +2246,62 @@ export function startPodRoom(
     add(...prop('whiteboard', wb.x, floorY, wb.z, deskYaw - 0.2));
     bookHits.push({ title: 'The whiteboard', author: 'this season\'s content calendar', x: wb.x, y: floorY + 1350 * MM, z: wb.z });
 
-    // Coco, asleep under the desk. From Max's photos: a small, lean, short-coated dog, near-black with brown in it, a
-    // greying muzzle, ears that stand up and fold over at the tips, a thin tail and a white spot on her chest. She
-    // lies curled on her side with her chin on her front paws and her tail wrapped round; she breathes slowly.
-    // Built in her own frame in millimetres (x toward her nose, y up, z toward the room), turned to lie along the desk.
+    // Coco, asleep under the desk. From Max's photos: a lean, short-coated dog of about 50 pounds, near-black with
+    // brown in it, a greying muzzle, a thin tail and a white spot on her chest, in her green Survey Corps hoodie with
+    // the hood up. She lies curled on her side, chin on her front paws, tail wrapped round, her back (and the patch)
+    // toward the room, and she breathes slowly. Built in her own frame in millimetres (x toward her nose, y up, z
+    // toward the wall), scaled up from a small-dog sketch, and turned to lie along the desk.
     {
       const COAT: [number, number, number] = [0.045, 0.032, 0.026];
-      const MUZZLE: [number, number, number] = [0.2, 0.17, 0.155];
-      const base = { lx: 0.1, lz: -0.09 };
-      const yaw = deskYaw + 0.25; // nose a little toward the room
+      const MUZZLE: [number, number, number] = [0.3, 0.26, 0.24];
+      const HOODIE: [number, number, number] = [0.07, 0.24, 0.15];
+      const SC = 1.4; // a 50 lb dog: about 1.4x the first sketch
+      const base = { lx: 0.08, lz: -0.07 };
+      const yaw = deskYaw + 0.22; // nose a little toward the room
       const bx = o.x + c0 * base.lx + s0 * base.lz;
       const bz = o.z - s0 * base.lx + c0 * base.lz;
       const cy = Math.cos(yaw), sy = Math.sin(yaw);
-      const at = (x: number, y: number, z: number) => ({ x: bx + (x * cy + z * sy) * MM, y: floorY + y * MM, z: bz + (-x * sy + z * cy) * MM });
+      // z is flipped so +z (the sketch's leg side) points at the wall and her back faces the room
+      const at = (x: number, y: number, z: number) => {
+        const X = x * SC, Y = y * SC, Z = -z * SC;
+        return { x: bx + (X * cy + Z * sy) * MM, y: floorY + Y * MM, z: bz + (-X * sy + Z * cy) * MM };
+      };
       const part = (kind: number, tint: [number, number, number], p: [number, number, number], r: [number, number, number], extra: Partial<Draw> = {}) => {
         const q = at(p[0], p[1], p[2]);
-        return D(ball, kind, tint, q.x, q.y, q.z, r[0] * MM, r[1] * MM, r[2] * MM, { ry: yaw, rough: 0.6, wrap: 0.2, ...extra });
+        return D(ball, kind, tint, q.x, q.y, q.z, r[0] * SC * MM, r[1] * SC * MM, r[2] * SC * MM, { ry: yaw, rough: 0.6, wrap: 0.2, ...extra });
       };
-      const breathe = { bob: 3 * MM, phase: 0.4 };
+      const breathe = { bob: 4 * MM, phase: 0.4 };
       add(
-        // body: ribcage, belly, haunch
+        // body under the hoodie: ribcage, belly, haunch
         part(1, COAT, [40, 95, 0], [190, 88, 105], breathe),
         part(1, COAT, [150, 92, 10], [105, 86, 100], breathe),
         part(1, COAT, [-140, 92, 20], [110, 88, 105]),
-        // the hind leg folded along her side, toward the room
+        // the hoodie: a green shell over her back and sides, ending short of the haunch, rising and falling with her
+        part(1, HOODIE, [30, 102, -6], [205, 92, 116], { ...breathe, rough: 0.8, wrap: 0.45 }),
+        part(1, HOODIE, [150, 98, 4], [116, 90, 108], { ...breathe, rough: 0.8, wrap: 0.45 }),
+        // the hind leg folded along her side
         part(1, COAT, [-120, 55, 105], [95, 38, 30]),
         part(1, COAT, [-30, 22, 120], [60, 18, 26]),
         // front legs stretched out, paws together
         part(1, COAT, [270, 26, 40], [105, 24, 26]),
         part(1, COAT, [280, 22, 95], [100, 22, 24]),
-        // the white spot on her chest, just showing
-        part(2, [0.88, 0.86, 0.82], [215, 70, 82], [24, 18, 10], { rough: 0.8 }),
-        // head resting on her paws, a greying muzzle and a black nose
+        // the white spot on her chest, just showing past the hoodie
+        part(2, [0.88, 0.86, 0.82], [225, 62, 60], [22, 16, 12], { rough: 0.8 }),
+        // head resting on her paws: the hood is up over the crown and ears, the face and greying muzzle out front
         part(1, COAT, [270, 88, 70], [78, 62, 66]),
+        part(1, HOODIE, [228, 116, 70], [64, 56, 74], { rough: 0.8, wrap: 0.45 }),
+        part(1, HOODIE, [262, 112, 70], [10, 50, 70], { rough: 0.8, wrap: 0.45 }), // the hood's rim, pushed back off her face
         part(1, MUZZLE, [350, 70, 78], [62, 38, 42]),
         part(2, [0.03, 0.025, 0.025], [405, 76, 80], [15, 12, 14], { rough: 0.25 }),
         // closed eyes: two short dark slits
-        part(2, [0.02, 0.015, 0.015], [318, 104, 118], [14, 3, 3], { rough: 0.6 }),
-        part(2, [0.02, 0.015, 0.015], [318, 104, 22], [14, 3, 3], { rough: 0.6 }),
-        // ears: up, then folded over at the tips
-        part(1, COAT, [240, 148, 112], [34, 40, 12], { rz: 0.5 }),
-        part(1, COAT, [262, 168, 118], [26, 14, 11], { rz: -0.4 }),
-        part(1, COAT, [240, 148, 28], [34, 40, 12], { rz: 0.5 }),
-        part(1, COAT, [262, 168, 22], [26, 14, 11], { rz: -0.4 }),
+        part(2, [0.02, 0.015, 0.015], [322, 98, 120], [12, 3, 3], { rough: 0.6 }),
+        part(2, [0.02, 0.015, 0.015], [322, 98, 22], [12, 3, 3], { rough: 0.6 }),
       );
+      // the wings patch on her back, facing the room and tipped up a little
+      {
+        const p = at(40, 108, -124);
+        add(D(box, 2, [0.62, 0.62, 0.62], p.x, p.y, p.z, 125 * SC * MM, 125 * SC * MM, 0.002, { ry: yaw, rx: -0.25, tex: paintTex(() => P.wingsPatch()), rough: 0.85, ...breathe }));
+      }
       // the tail: a thin curve from the rump round toward her back feet
       for (let i = 0; i <= 9; i++) {
         const t = i / 9;
@@ -2295,10 +2310,56 @@ export function startPodRoom(
         const z = 20 + Math.sin(a) * 120 * t;
         add(part(1, COAT, [x, 26 + 4 * (1 - t), z], [22 - t * 10, 15 - t * 7, 22 - t * 10]));
       }
-      const head = at(300, 90, 70);
-      bookHits.push({ title: 'Coco', author: 'asleep under the desk, as usual', x: head.x, y: head.y, z: head.z });
+      const head = at(300, 100, 70);
+      bookHits.push({ title: 'Coco', author: 'asleep under the desk in her Survey Corps hoodie', x: head.x, y: head.y, z: head.z });
     }
     bookHits.push({ title: 'Nintendo Switch OLED', author: 'docked · Super Smash Bros. Ultimate', x: sw.x, y: sw.y + 0.04, z: sw.z });
+    // Hovering a part of a desk prop names it: each label sits on the part's centre, placed the way prop() places it.
+    const labelParts = (name: PropName, at: { x: number; y: number; z: number }, yaw: number, labels: Record<string, [string, string]>) => {
+      const turn = rot3(0, deskYaw + yaw, 0);
+      for (const part of LOOT[name].parts) {
+        const l = labels[part.name] ?? (part.name.startsWith('key-') ? labels['key-*'] : undefined);
+        if (!l) continue;
+        const c = apply3(turn, part.at.map((v) => v * MM));
+        bookHits.push({ title: l[0], author: l[1], x: at.x + c[0], y: at.y + c[1] + (part.size[1] / 2) * MM, z: at.z + c[2] });
+      }
+    };
+    const PAD = 'Work Louder macro pad';
+    labelParts('macro-pad', pad, 0.12, {
+      knob: ['Knob', `${PAD} · a rotary encoder`],
+      stick: ['Joystick', `${PAD} · a thumbstick`],
+      'frosted-key': ['Frosted key', `${PAD} · the translucent one`],
+      'key-*': ['Key', `${PAD} · one of 13 programmable keys`],
+      'led-1': ['Status lights', `${PAD} · which layer is on`],
+    });
+    const MX = 'Logitech MX Master 3';
+    labelParts('mx-master', mouse, 0.1, {
+      body: [MX, 'the mouse'],
+      'scroll-wheel': ['MagSpeed scroll wheel', `${MX} · free-spins through long pages`],
+      'thumb-wheel': ['Thumb wheel', `${MX} · scrolls sideways`],
+      'thumb-rest': ['Thumb rest', `${MX} · with the gesture button under it`],
+    });
+    labelParts('mx-keys', keys, 0, { deck: ['Logitech MX Keys', 'the keyboard · backlit, low-profile'] });
+    labelParts('switch-oled', sw, 0, {
+      'joycon-l': ['Left Joy-Con', 'Nintendo Switch OLED · neon blue'],
+      'joycon-r': ['Right Joy-Con', 'Nintendo Switch OLED · neon red'],
+      'dock-front': ['Switch dock', 'Nintendo Switch OLED · out to the TV'],
+    });
+    const GC = 'GameCube-style controller';
+    labelParts('gc-controller', gc, 0.3, {
+      'stick-cap': ['Control stick', `${GC} · movement`],
+      'c-cap': ['C-stick', `${GC} · smash attacks`],
+      'a-button': ['A button', GC],
+      'b-button': ['B button', `${GC} · specials`],
+      'x-button': ['X button', `${GC} · jump`],
+      'y-button': ['Y button', `${GC} · jump`],
+      'dpad-h': ['D-pad', `${GC} · taunts`],
+      'z-r': ['Z button', `${GC} · grab`],
+      'trigger-l': ['L trigger', `${GC} · shield`],
+      'trigger-r': ['R trigger', `${GC} · shield`],
+      start: ['Start', GC],
+      home: ['Home', GC],
+    });
     bookHits.push({ title: 'GameCube-style controller', author: 'how Max plays Smash · 999+ hours', x: gc.x, y: gc.y + 0.02, z: gc.z });
     bookHits.push({ title: 'Macro pad', author: 'Work Louder · 13 keys, a knob and a stick', x: pad.x, y: pad.y + 0.012, z: pad.z });
     bookHits.push({ title: 'Echo Studio', author: 'the speaker by the PC', x: studio.x, y: studio.y + 0.06, z: studio.z });
@@ -2324,7 +2385,8 @@ export function startPodRoom(
   // ---------- the drum kit, front right: a five-piece in red, set up the way a right-handed drummer plays it ----------
   // Everything is placed in the kit's own frame (x to the audience's right, z toward the audience, y up) and
   // turned as one to face the room, so the shells, stands and cymbals stay square to each other.
-  {
+  // Behind a feature flag (features.ts), off by default: `?drums=1` brings it back.
+  if (feature('drums')) {
     const SHELL: [number, number, number] = [0.5, 0.04, 0.07];
     const HEAD: [number, number, number] = [0.92, 0.9, 0.84];
     const CHROME: [number, number, number] = [0.78, 0.79, 0.82];

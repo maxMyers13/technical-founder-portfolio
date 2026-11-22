@@ -818,10 +818,9 @@ export function pathionDesktop(logo: HTMLImageElement | null, w = 1280, h = 720)
 
 /** The LG C3 48" on the wall: Smash night, four players ready. An original screen, no game art. */
 /**
- * The TV: a Smash Ultimate versus card, Cloud vs Sephiroth, the way the match-up thumbnails look: red on the left,
- * blue on the right, split on a slant, a brushed red "VS" in the middle and embers in the air. The fighters are
- * original silhouettes with rim light (a spiky-haired swordsman with a broad blade, a long-haired one with a very long
- * katana), not copies of the character art.
+ * The TV: a fighting-game versus card in the style of the match-up thumbnails: red on the left, blue on the right,
+ * split on a slant, a brushed red "VS" in the middle and embers in the air. Both fighters are original silhouettes
+ * with rim light (a swordsman with a short broad blade, a hooded fighter with a staff), labelled P1 and P2.
  */
 export function smashNight(w = 1280, h = 720) {
   const { c, g } = make(w, h);
@@ -882,25 +881,19 @@ export function smashNight(w = 1280, h = 720) {
     const hx = w * 0.235, hy = h * 0.42;
     g.moveTo(hx + h * 0.09, hy);
     g.ellipse(hx, hy, h * 0.085, h * 0.105, 0, 0, Math.PI * 2);
-    // spikes
-    // a mass of hair swept up and back, broken into big spikes, wider than the head
-    const spikes = [[-0.24, 0.02], [-0.25, -0.12], [-0.17, -0.24], [-0.05, -0.3], [0.07, -0.26], [0.17, -0.17], [0.22, -0.04]];
-    g.moveTo(hx - h * 0.09, hy + h * 0.02);
-    for (const [dx, dy] of spikes) {
-      g.lineTo(hx + dx * h, hy + dy * h);
-      g.lineTo(hx + dx * h * 0.62, hy + dy * h * 0.62 - h * 0.02);
-    }
-    g.lineTo(hx + h * 0.09, hy - h * 0.02);
-    g.closePath();
+    // a topknot
+    g.moveTo(hx + h * 0.03, hy - h * 0.09);
+    g.ellipse(hx, hy - h * 0.12, h * 0.035, h * 0.04, 0, 0, Math.PI * 2);
     // pauldron
     g.moveTo(w * 0.33 + h * 0.07, h * 0.6);
     g.ellipse(w * 0.32, h * 0.6, h * 0.075, h * 0.05, -0.3, 0, Math.PI * 2);
-    // the broad blade, rising from behind the shoulder
-    g.moveTo(w * 0.34, h * 0.66);
-    g.lineTo(w * 0.36, h * 0.62);
-    g.lineTo(w * 0.42, h * 0.08);
-    g.lineTo(w * 0.465, h * 0.1);
-    g.lineTo(w * 0.4, h * 0.66);
+    // a short blade held up beside the shoulder
+    g.moveTo(w * 0.35, h * 0.64);
+    g.lineTo(w * 0.37, h * 0.62);
+    g.lineTo(w * 0.41, h * 0.3);
+    g.lineTo(w * 0.425, h * 0.26);
+    g.lineTo(w * 0.43, h * 0.31);
+    g.lineTo(w * 0.39, h * 0.64);
     g.closePath();
   }, '#ffb347');
   // right fighter: long hair falling past the shoulders, a high collar, a very long thin blade across the frame
@@ -911,13 +904,10 @@ export function smashNight(w = 1280, h = 720) {
     g.lineTo(w * 0.84, h * 0.58);
     g.quadraticCurveTo(w * 0.93, h * 0.62, w * 0.96, h);
     g.closePath();
-    // hair: a long fall from the crown down past the shoulders
-    g.moveTo(hx - h * 0.1, hy - h * 0.05);
-    g.quadraticCurveTo(hx - h * 0.02, hy - h * 0.2, hx + h * 0.1, hy - h * 0.06);
-    g.quadraticCurveTo(hx + h * 0.2, hy + h * 0.3, hx + h * 0.24, hy + h * 0.55);
-    g.lineTo(hx + h * 0.1, hy + h * 0.5);
-    g.lineTo(hx - h * 0.12, hy + h * 0.52);
-    g.quadraticCurveTo(hx - h * 0.18, hy + h * 0.2, hx - h * 0.1, hy - h * 0.05);
+    // a pointed hood over the head and shoulders
+    g.moveTo(hx - h * 0.16, hy + h * 0.2);
+    g.quadraticCurveTo(hx - h * 0.14, hy - h * 0.12, hx + h * 0.02, hy - h * 0.2);
+    g.quadraticCurveTo(hx + h * 0.16, hy - h * 0.08, hx + h * 0.16, hy + h * 0.2);
     g.closePath();
     // collar
     g.moveTo(hx - h * 0.12, h * 0.58);
@@ -926,15 +916,15 @@ export function smashNight(w = 1280, h = 720) {
     g.lineTo(hx + h * 0.14, h * 0.58);
     g.closePath();
   }, '#8fd8ff');
-  // the long katana: a thin line from lower right up to the far left
+  // a staff held across the body
   g.save();
   g.strokeStyle = '#dfe8f0';
   g.shadowColor = '#bfe6ff';
   g.shadowBlur = 14;
   g.lineWidth = 5;
   g.beginPath();
-  g.moveTo(w * 0.88, h * 0.84);
-  g.lineTo(w * 0.52, h * 0.2);
+  g.moveTo(w * 0.9, h * 0.9);
+  g.lineTo(w * 0.66, h * 0.16);
   g.stroke();
   g.restore();
 
@@ -974,11 +964,11 @@ export function smashNight(w = 1280, h = 720) {
   g.strokeStyle = '#140d10';
   g.fillStyle = '#ffffff';
   g.textAlign = 'left';
-  g.strokeText('CLOUD', w * 0.04, h - bar - h * 0.04);
-  g.fillText('CLOUD', w * 0.04, h - bar - h * 0.04);
+  g.strokeText('P1', w * 0.04, h - bar - h * 0.04);
+  g.fillText('P1', w * 0.04, h - bar - h * 0.04);
   g.textAlign = 'right';
-  g.strokeText('SEPHIROTH', w * 0.96, h - bar - h * 0.04);
-  g.fillText('SEPHIROTH', w * 0.96, h - bar - h * 0.04);
+  g.strokeText('P2', w * 0.96, h - bar - h * 0.04);
+  g.fillText('P2', w * 0.96, h - bar - h * 0.04);
 
   // letterbox bars
   g.fillStyle = '#000';
@@ -1676,3 +1666,75 @@ export function whiteboard(w = 1208, h = 1728) {
   return c;
 }
 
+
+/**
+ * The patch on Coco's green hoodie: a pale shield with a pair of wings, one blue and one white, on the hoodie's green.
+ * An original drawing in the spirit of the Survey Corps emblem on her real hoodie, not a copy of it.
+ */
+export function wingsPatch(w = 256, h = 256) {
+  const { c, g } = make(w, h);
+  g.fillStyle = '#1f5a3a';
+  g.fillRect(0, 0, w, h);
+  const cx = w / 2;
+  // the shield
+  g.fillStyle = '#e4e0e8';
+  g.strokeStyle = '#a9a2b8';
+  g.lineWidth = 5;
+  g.beginPath();
+  g.moveTo(w * 0.2, h * 0.16);
+  g.lineTo(w * 0.8, h * 0.16);
+  g.lineTo(w * 0.8, h * 0.58);
+  g.quadraticCurveTo(w * 0.8, h * 0.78, cx, h * 0.9);
+  g.quadraticCurveTo(w * 0.2, h * 0.78, w * 0.2, h * 0.58);
+  g.closePath();
+  g.fill();
+  g.stroke();
+  // two wings fanning out from the middle, feathers stacked
+  const R = w * 0.32;
+  const cy = h * 0.5;
+  const wing = (dir: 1 | -1, fill: string) => {
+    for (let k = 0; k < 5; k++) {
+      const len = R * (0.95 - k * 0.12);
+      const y0 = cy - R * 0.45 + k * R * 0.2;
+      g.fillStyle = fill;
+      g.strokeStyle = '#2a2440';
+      g.lineWidth = 2.5;
+      g.beginPath();
+      g.moveTo(cx, y0);
+      g.quadraticCurveTo(cx + dir * len * 0.6, y0 - R * 0.3, cx + dir * len, y0 - R * 0.06);
+      g.quadraticCurveTo(cx + dir * len * 0.55, y0 + R * 0.08, cx, y0 + R * 0.14);
+      g.closePath();
+      g.fill();
+      g.stroke();
+    }
+  };
+  wing(-1, '#5b5fc7');
+  wing(1, '#ffffff');
+  return c;
+}
+
+/**
+ * The wrap for the energy-drink can on the desk: a slim can in blue and silver blocks with the name in red. A plain
+ * stand-in for the real can, with no copied artwork.
+ */
+export function energyCanWrap(w = 512, h = 512) {
+  const { c, g } = make(w, h);
+  const cell = w / 8;
+  for (let y = 0; y < h; y += cell) {
+    for (let x = 0; x < w; x += cell) {
+      const blue = (x / cell + y / cell) % 2 === 0;
+      g.fillStyle = blue ? '#1e3f8a' : '#c9ccd3';
+      g.fillRect(x, y, cell, cell);
+    }
+  }
+  // a band round the middle for the name
+  g.fillStyle = '#e9ebef';
+  g.fillRect(0, h * 0.38, w, h * 0.24);
+  g.fillStyle = '#d2232a';
+  g.font = `900 ${h * 0.13}px ${DISPLAY}`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  // printed twice round the can so the name faces the room whichever way it is turned
+  for (const cx of [w * 0.25, w * 0.75]) g.fillText('Red Bull', cx, h * 0.5);
+  return c;
+}
