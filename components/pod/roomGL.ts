@@ -857,6 +857,39 @@ function dualShockOutline(): [number, number][] {
   return smoothLoop(cw.reverse(), 5);
 }
 
+/**
+ * A slice of a cylinder: a curved panel of radius R spanning `arc` radians, `h` tall, its middle at the origin and
+ * its edges wrapping toward +z (the viewer), like a curved monitor. The front surface sits `off` along the inward
+ * normal; with `depth` > 0 it is closed into a slab (back, top, bottom and ends). UVs run 0..1 across and up the front.
+ */
+function curvedPanel(R: number, arc: number, h: number, off = 0, depth = 0, segs = 40): CpuMesh {
+  const b = new Builder();
+  const P = (t: number, y: number, o: number) => [R * Math.sin(t) - Math.sin(t) * o, y, R * (1 - Math.cos(t)) + Math.cos(t) * o];
+  const tA = -arc / 2;
+  for (let i = 0; i < segs; i++) {
+    const t0 = tA + (i * arc) / segs;
+    const t1 = tA + ((i + 1) * arc) / segs;
+    const tm = (t0 + t1) / 2;
+    const n = [-Math.sin(tm), 0, Math.cos(tm)];
+    const u0 = i / segs;
+    const u1 = (i + 1) / segs;
+    b.face([P(t0, -h / 2, off), P(t1, -h / 2, off), P(t1, h / 2, off), P(t0, h / 2, off)], n, [[u0, 0], [u1, 0], [u1, 1], [u0, 1]]);
+    if (depth > 0) {
+      const back = off - depth;
+      b.face([P(t0, -h / 2, back), P(t1, -h / 2, back), P(t1, h / 2, back), P(t0, h / 2, back)], [-n[0], 0, -n[2]], UV, 0.8);
+      b.face([P(t0, h / 2, off), P(t1, h / 2, off), P(t1, h / 2, back), P(t0, h / 2, back)], [0, 1, 0], UV, 1, 1);
+      b.face([P(t0, -h / 2, off), P(t1, -h / 2, off), P(t1, -h / 2, back), P(t0, -h / 2, back)], [0, -1, 0], UV, 0.8, 1);
+    }
+  }
+  if (depth > 0) {
+    for (const [t, s] of [[tA, -1], [-tA, 1]]) {
+      const back = off - depth;
+      b.face([P(t, -h / 2, off), P(t, -h / 2, back), P(t, h / 2, back), P(t, h / 2, off)], [s * Math.cos(t), 0, s * Math.sin(t)], UV, 1, 1);
+    }
+  }
+  return b.finish();
+}
+
 function floorMesh(): CpuMesh {
   const b = new Builder();
   b.face(
@@ -1878,28 +1911,18 @@ export function startPodRoom(
   const cmZ = deskZ - 0.08;
   const uwW = 0.4;
   const uwH = uwW / (21 / 9);
-  const SEG = 5;
   const arc = 0.9;
   const R = uwW / arc;
   const ALU: [number, number, number] = [0.42, 0.43, 0.46];
-  for (let k = 0; k < SEG; k++) {
-    const th = (k - (SEG - 1) / 2) * (arc / SEG);
-    const px = cmX + R * Math.sin(th);
-    const pz = cmZ + R * (1 - Math.cos(th));
-    const segW = (uwW / SEG) * 1.02;
-    const u0 = k / SEG;
-    const u1 = (k + 1) / SEG;
+  // One continuous curved panel (not facets): the picture on a smooth 1800R-style arc, in a curved housing a few
+  // millimetres larger all round, so from above it reads as one bent screen with an even bezel.
+  {
+    const bez = 0.005;
+    const housing = upload(gl, curvedPanel(R, (uwW + bez * 2) / R, uwH + bez * 2, -0.0012, 0.009, 48));
+    const panel = upload(gl, curvedPanel(R, arc, uwH, 0, 0, 48));
     add(
-      D(box, 2, MATTE, px - Math.sin(-th) * 0.004, cmY, pz - Math.cos(th) * 0.004, segW, uwH + 0.008, 0.007, { ry: -th, rough: 0.25 }),
-      D(box, 2, [1, 1, 1], px, cmY, pz + 0.0005, segW, uwH, 0.001, {
-        ry: -th,
-        tex: uwTex,
-        rough: 0.08,
-        screen: true,
-        uvXY: [u1 - u0, 1],
-        uvOff: [(u0 + u1) / 2 - 0.5, 0],
-        ...(k === Math.floor(SEG / 2) ? { anchor: 'writing' as const, anchorDy: -0.11 } : {}),
-      }),
+      D(housing, 2, MATTE, cmX, cmY, cmZ, 1, 1, 1, { rough: 0.3 }),
+      D(panel, 2, [1, 1, 1], cmX, cmY, cmZ, 1, 1, 1, { tex: uwTex, rough: 0.08, screen: true, anchor: 'writing', anchorDy: -0.11 }),
     );
   }
   // the VIVO arm: a desk clamp at the back edge, a post, two aluminum links to the back of the screen
