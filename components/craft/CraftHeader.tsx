@@ -1,19 +1,39 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Route } from '../../types';
+import { WORK_ROUTES } from './TabBar';
 
 const LINKS: { route: Route; label: string; dot: string }[] = [
-  { route: 'lilo', label: 'LILO', dot: '#2E5D8C' },
-  { route: 'builds', label: 'Builds', dot: '#B39A6E' },
-  { route: 'life', label: 'Life', dot: '#C9A04A' },
   { route: 'speaking', label: 'Speaking', dot: '#B83A26' },
-  { route: 'writing', label: 'Writing', dot: '#2F6F6B' },
-  { route: 'ask', label: 'Ask WM3', dot: '#FFF6E5' },
+  { route: 'life', label: 'About', dot: '#C9A04A' },
 ];
 
-/** The header for every page off the pod: the pod's own dark bar, its console buttons, and a way back in. */
+/**
+ * The header for every page off the pod: the pod's own dark bar, its console buttons, and a way back in.
+ * Three places on the bar: Work (a folder holding LILO, Builds and Writing), Speaking and About.
+ */
 const CraftHeader: React.FC<{ route: Route; onNavigate: (r: Route) => void }> = ({ route, onNavigate }) => {
+  const [open, setOpen] = useState(false);
+  const work = useRef<HTMLLIElement>(null);
+  const inWork = WORK_ROUTES.find((w) => w.route === route);
+
+  useEffect(() => setOpen(false), [route]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    const onDown = (e: PointerEvent) => {
+      if (work.current && !work.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+    };
+  }, [open]);
+
   const go = (r: Route) => (e: React.MouseEvent) => {
     e.preventDefault();
+    setOpen(false);
     onNavigate(r);
   };
   return (
@@ -30,6 +50,34 @@ const CraftHeader: React.FC<{ route: Route; onNavigate: (r: Route) => void }> = 
       </a>
       <nav aria-label="Pages">
         <ul className="craft-head__nav">
+          <li className="craft-folder" ref={work}>
+            <button
+              type="button"
+              className="craft-chip"
+              aria-expanded={open}
+              aria-controls="craft-work"
+              aria-current={inWork ? 'page' : undefined}
+              onClick={() => setOpen((o) => !o)}
+            >
+              <i style={{ background: '#2E5D8C' }} />
+              {inWork ? `Work: ${inWork.label}` : 'Work'}
+              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2.5 4.5 6 8l3.5-3.5" />
+              </svg>
+            </button>
+            {open && (
+              <ul className="craft-folder__menu" id="craft-work">
+                {WORK_ROUTES.map((w) => (
+                  <li key={w.route}>
+                    <a href={`#${w.route}`} onClick={go(w.route)} aria-current={route === w.route ? 'page' : undefined}>
+                      <b>{w.label}</b>
+                      <span>{w.hint}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
           {LINKS.map((l) => (
             <li key={l.route}>
               <a

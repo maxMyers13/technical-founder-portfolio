@@ -3,8 +3,9 @@ import { Route } from '../../types';
 
 /**
  * The phone dock: a frosted pill that floats at the bottom of every screen, the room included, so any big
- * section is one tap away wherever you are (the way Instagram's and Snapchat's tab bars work). Five tabs fit a
- * phone; the rest sit behind More. Hidden above 760px, where the headers carry the navigation.
+ * section is one tap away wherever you are (the way Instagram's and Snapchat's tab bars work). Four places: the
+ * pod, Work (which opens onto LILO, Builds and Writing), Speaking and About. Ask WM3 is reached from the room.
+ * Hidden above 760px, where the headers carry the navigation.
  */
 
 const Icon = ({ d }: { d: React.ReactNode }) => (
@@ -13,7 +14,7 @@ const Icon = ({ d }: { d: React.ReactNode }) => (
   </svg>
 );
 
-// the room's gate, a microphone, a person, a code bracket, three dots
+// the room's gate, a code bracket, a microphone, a person
 const GATE = (
   <>
     <path d="M3 6.5c3 .9 15 .9 18 0" />
@@ -34,31 +35,23 @@ const PERSON = (
     <path d="M4.8 20.2c1-3.8 3.8-5.7 7.2-5.7s6.2 1.9 7.2 5.7" />
   </>
 );
-const MORE = (
-  <>
-    <circle cx="5.5" cy="12" r="1.3" fill="currentColor" />
-    <circle cx="12" cy="12" r="1.3" fill="currentColor" />
-    <circle cx="18.5" cy="12" r="1.3" fill="currentColor" />
-  </>
-);
-
-const TABS: { route: Route; label: string; icon: React.ReactNode }[] = [
-  { route: 'home', label: 'Pod', icon: GATE },
-  { route: 'lilo', label: 'LILO', icon: CODE },
+const BEFORE: { route: Route; label: string; icon: React.ReactNode }[] = [{ route: 'home', label: 'Pod', icon: GATE }];
+const AFTER: { route: Route; label: string; icon: React.ReactNode }[] = [
   { route: 'speaking', label: 'Speaking', icon: MIC },
-  { route: 'life', label: 'Life', icon: PERSON },
+  { route: 'life', label: 'About', icon: PERSON },
 ];
-const MORE_ROUTES: { route: Route; label: string; hint: string }[] = [
+/** Work is a folder, not a page: its tab opens these. */
+export const WORK_ROUTES: { route: Route; label: string; hint: string }[] = [
+  { route: 'lilo', label: 'LILO', hint: 'the case study' },
   { route: 'builds', label: 'Builds', hint: 'Edge, Chromium and side quests' },
   { route: 'writing', label: 'Writing', hint: 'guides, written properly' },
-  { route: 'ask', label: 'Ask WM3', hint: 'ask the post archive anything' },
 ];
 const HASH: Partial<Record<Route, string>> = { home: 'now' };
 
 const TabBar: React.FC<{ route: Route; onNavigate: (r: Route) => void }> = ({ route, onNavigate }) => {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
-  const inMore = MORE_ROUTES.some((m) => m.route === route);
+  const inWork = WORK_ROUTES.some((m) => m.route === route);
 
   useEffect(() => setOpen(false), [route]);
   useEffect(() => {
@@ -85,7 +78,7 @@ const TabBar: React.FC<{ route: Route; onNavigate: (r: Route) => void }> = ({ ro
     <div className="tabbar" ref={wrap}>
       {open && (
         <ul className="tabbar__more" id="tabbar-more">
-          {MORE_ROUTES.map((m) => (
+          {WORK_ROUTES.map((m) => (
             <li key={m.route}>
               <a href={`#${HASH[m.route] ?? m.route}`} onClick={go(m.route)} aria-current={route === m.route ? 'page' : undefined}>
                 <b>{m.label}</b>
@@ -96,7 +89,7 @@ const TabBar: React.FC<{ route: Route; onNavigate: (r: Route) => void }> = ({ ro
         </ul>
       )}
       <nav className="tabbar__pill" aria-label="Sections">
-        {TABS.map((t) => (
+        {BEFORE.map((t) => (
           <a
             key={t.route}
             className="tabbar__tab"
@@ -113,12 +106,24 @@ const TabBar: React.FC<{ route: Route; onNavigate: (r: Route) => void }> = ({ ro
           className="tabbar__tab"
           aria-expanded={open}
           aria-controls="tabbar-more"
-          aria-current={inMore ? 'page' : undefined}
+          aria-current={inWork ? 'page' : undefined}
           onClick={() => setOpen((o) => !o)}
         >
-          <Icon d={MORE} />
-          <span>More</span>
+          <Icon d={CODE} />
+          <span>Work</span>
         </button>
+        {AFTER.map((t) => (
+          <a
+            key={t.route}
+            className="tabbar__tab"
+            href={`#${HASH[t.route] ?? t.route}`}
+            onClick={go(t.route)}
+            aria-current={route === t.route ? 'page' : undefined}
+          >
+            <Icon d={t.icon} />
+            <span>{t.label}</span>
+          </a>
+        ))}
       </nav>
     </div>
   );
