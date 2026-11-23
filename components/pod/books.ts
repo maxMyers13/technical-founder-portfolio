@@ -102,13 +102,15 @@ const AUDIO_PRINT: Book[] = AUDIOBOOKS.filter((a) => a.status !== 'queued').map(
 
 export const BOOKS: Book[] = [...PRINT, ...AUDIO_PRINT];
 
-/** The record crate by the bed: the four albums in its slots. Title and artist only, no cover art. */
-export type Record = { title: string; artist: string; color: string; ink: string };
+/** The record crate by the bed: the four albums in its slots. Title and artist only, no cover art. `track` is the
+ * song a click on the sleeve plays on the turntable, as Apple Music's 30-second preview. */
+export type Record = { title: string; artist: string; color: string; ink: string; track: string; preview: string };
+const PREVIEW = 'https://audio-ssl.itunes.apple.com/itunes-assets/';
 export const RECORDS: Record[] = [
-  { title: 'Playboi Carti', artist: 'Playboi Carti', color: '#2a2a2e', ink: '#f2f2f2' },
-  { title: 'Pink Tape', artist: 'Lil Uzi Vert', color: '#f3a6c8', ink: '#2a1020' },
-  { title: 'Whole Lotta Red', artist: 'Playboi Carti', color: '#b3141b', ink: '#111111' },
-  { title: 'Utopia', artist: 'Travis Scott', color: '#141414', ink: '#e8e2d4' },
+  { title: 'Playboi Carti', artist: 'Playboi Carti', color: '#2a2a2e', ink: '#f2f2f2', track: 'Magnolia', preview: `${PREVIEW}AudioPreview211/v4/d6/cd/ef/d6cdef5d-baaa-acfb-11da-3103278ad438/mzaf_2021994347730966010.plus.aac.p.m4a` },
+  { title: 'Pink Tape', artist: 'Lil Uzi Vert', color: '#f3a6c8', ink: '#2a1020', track: 'Just Wanna Rock', preview: `${PREVIEW}AudioPreview211/v4/ae/18/19/ae181904-cdc9-a089-2a5a-ce0257279f4b/mzaf_2772915956715751130.plus.aac.p.m4a` },
+  { title: 'Whole Lotta Red', artist: 'Playboi Carti', color: '#b3141b', ink: '#111111', track: 'Sky', preview: `${PREVIEW}AudioPreview211/v4/94/e1/4f/94e14f0e-4ae7-7330-b597-7fdca2e32eb5/mzaf_12052515908123345122.plus.aac.p.m4a` },
+  { title: 'Utopia', artist: 'Travis Scott', color: '#141414', ink: '#e8e2d4', track: 'FE!N', preview: `${PREVIEW}AudioPreview221/v4/ce/61/9a/ce619acc-40f8-5bf0-c6d8-5649dacc5d3c/mzaf_9048266760750013994.plus.aac.p.m4a` },
 ];
 
 const CLOTH = ['#2e5d8c', '#b83a26', '#2f6f6b', '#5b4b8a', '#c9a04a', '#1f1f24', '#8c3b5a', '#3d5a3a'];

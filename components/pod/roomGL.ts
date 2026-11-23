@@ -1678,6 +1678,45 @@ export function startPodRoom(
   let tipKey = '';
   // Clicking a book that is showing its hover card opens it (on Audible, or a book search for manga).
   let tipHref = '';
+  /** The record crate's sleeve under the pointer, if any: a click on it plays that album on the turntable. */
+  let tipRecord = -1;
+  /** The turntable's moving parts, filled in when the crate is built. */
+  let deck: {
+    spinners: Draw[];
+    label: Draw;
+    blank: WebGLTexture | null;
+    labels: (WebGLTexture | null)[];
+    arm: Draw;
+    head: Draw;
+    pivot: { x: number; z: number };
+    /** The sleeves in the crate: the one whose record is playing slides forward out of its slot. */
+    sleeves: { d: Draw; x: number; z: number; out: [number, number]; lift: number }[];
+  } | null = null;
+  /** What the turntable is doing: which record is on it (-1 = none), how fast it turns and where the arm is. */
+  const player = { record: -1, playing: false, speed: 0, angle: 0, arm: 0, audio: null as HTMLAudioElement | null };
+  const stopRecord = () => {
+    player.playing = false;
+    player.audio?.pause();
+  };
+  const playRecord = (n: number) => {
+    if (player.record === n && player.playing) return stopRecord();
+    if (!player.audio) {
+      player.audio = new Audio();
+      player.audio.preload = 'auto';
+      player.audio.addEventListener('ended', () => (player.playing = false));
+      player.audio.addEventListener('pause', () => (player.playing = false));
+      player.audio.addEventListener('playing', () => (player.playing = true));
+    }
+    const a = player.audio;
+    if (player.record !== n) {
+      a.src = RECORDS[n].preview;
+      player.record = n;
+      if (deck) deck.label.tex = deck.labels[n];
+    } else if (a.ended) a.currentTime = 0;
+    a.volume = 0.7;
+    player.playing = true;
+    a.play().catch(() => (player.playing = false));
+  };
   // Once the camera has gone in to an area, dragging looks around it: the view follows the hand, like sliding a
   // photo. pan is in world units (x, y, z), eased into the camera's focus point, and cleared when the area changes.
   const pan = [0, 0, 0];
@@ -1734,7 +1773,8 @@ export function startPodRoom(
       dragged = false; // the click that ends a drag opens nothing
       return;
     }
-    if (!tipHref || !(e.target instanceof Element) || e.target.closest('a, button, .pod-overlay')) return;
+    if ((!tipHref && tipRecord < 0) || !(e.target instanceof Element) || e.target.closest('a, button, .pod-overlay')) return;
+    if (tipRecord >= 0) return playRecord(tipRecord);
     window.open(tipHref, '_blank', 'noopener,noreferrer');
   };
   document.addEventListener('click', openBook);
@@ -1777,7 +1817,7 @@ export function startPodRoom(
   const innerL = caseU - caseW / 2 + plank + 0.004;
   const innerR = caseU + caseW / 2 - plank - 0.004;
   /** `link`: where a click on it goes (a book on Audible or a book search), with the words for the hover card. */
-  type BookHit = { title: string; author?: string; link?: { href: string; label: string } | null; x: number; y: number; z: number };
+  type BookHit = { title: string; author?: string; link?: { href: string; label: string } | null; record?: number; x: number; y: number; z: number };
   const bookHits: BookHit[] = [];
   const badgeHits: { id: `badge:${string}`; x: number; y: number; z: number }[] = [];
   const DIMS = {
@@ -2094,22 +2134,39 @@ export function startPodRoom(
       ...[-1, 0, 1].map((n) => part(n * (cw / 4), bodyY0 + bodyH / 2, 0, 0.01, bodyH, cd - 0.01)), // dividers
       ...[-1, 1].flatMap((sx) => [-1, 1].map((sz) => part(sx * (cw / 2 - 0.012), floorY + legH / 2, sz * (cd / 2 - 0.012), 0.016, legH, 0.016, [0.12, 0.12, 0.13]))),
     );
+    const sleeves: { d: Draw; x: number; z: number; out: [number, number]; lift: number }[] = [];
     RECORDS.forEach((r, n) => {
       const lx = -cw / 2 + cw / 8 + n * (cw / 4);
       const q = P2(lx - 0.012, bodyY0 + 0.014 + 0.085, 0.005);
       const tex = paintTex(() => P.sleeve(r.title, r.artist, r.color, r.ink));
-      add(D(box, 2, [1, 1, 1], q.x, q.y, q.z, 0.17, 0.17, 0.004, { ry: ry0 - Math.PI / 2 + 0.25, rz: 0, tex, rough: 0.6 }));
-      bookHits.push({ title: r.title, author: `${r.artist} · on vinyl`, ...q });
+      const sleeve = D(box, 2, [1, 1, 1], q.x, q.y, q.z, 0.17, 0.17, 0.004, { ry: ry0 - Math.PI / 2 + 0.25, rz: 0, tex, rough: 0.6 });
+      sleeves.push({ d: sleeve, x: q.x, z: q.z, out: [Math.sin(ry0), Math.cos(ry0)], lift: 0 });
+      add(sleeve);
+      bookHits.push({ title: r.title, author: `${r.artist} · on vinyl`, record: n, ...q });
     });
-    // the turntable
+    // the turntable: the platter, the record and its label turn while a record plays; the tonearm swings over
     const tt = P2(0, bodyY0 + bodyH + 0.034, 0);
+    const cx = tt.x - 0.03;
+    const blank = paintTex(() => P.recordLabel('', '', '#b3141b', '#111111'));
+    const labels = RECORDS.map((r) => paintTex(() => P.recordLabel(r.title, r.artist, r.color, r.ink)));
+    const disc = (tint: [number, number, number], dy: number, size: number, extra: Partial<Draw> = {}) =>
+      D(coin, 2, tint, cx, tt.y + dy, tt.z, size, size, 1, { rx: -Math.PI / 2, ...extra });
+    const spinners = [
+      disc([0.75, 0.76, 0.78], 0.019, 0.165, { rough: 0.2 }),
+      disc([0.03, 0.03, 0.035], 0.021, 0.155, { rough: 0.15 }),
+      disc([1, 1, 1], 0.022, 0.05, { rough: 0.6, tex: blank }),
+    ];
+    const pivot = { x: tt.x + 0.107, z: tt.z + 0.003 };
+    const arm = D(box, 2, [0.8, 0.8, 0.82], 0, tt.y + 0.03, 0, 0.11, 0.006, 0.006, { rough: 0.2 });
+    const head = D(box, 2, [0.2, 0.2, 0.22], 0, tt.y + 0.027, 0, 0.014, 0.008, 0.01, { rough: 0.4 });
     add(
       D(box, 2, [0.1, 0.09, 0.09], tt.x, tt.y, tt.z, 0.26, 0.036, 0.19, { ry: ry0, rough: 0.35 }),
-      D(coin, 2, [0.75, 0.76, 0.78], tt.x - 0.03, tt.y + 0.019, tt.z, 0.165, 0.165, 1, { rx: -Math.PI / 2, rough: 0.2 }),
-      D(coin, 2, [0.03, 0.03, 0.035], tt.x - 0.03, tt.y + 0.021, tt.z, 0.155, 0.155, 1, { rx: -Math.PI / 2, rough: 0.15 }),
-      D(coin, 2, [0.75, 0.1, 0.12], tt.x - 0.03, tt.y + 0.022, tt.z, 0.05, 0.05, 1, { rx: -Math.PI / 2, rough: 0.6 }),
-      D(box, 2, [0.8, 0.8, 0.82], tt.x + 0.06, tt.y + 0.03, tt.z + 0.02, 0.1, 0.006, 0.006, { ry: ry0 + 0.6, rough: 0.2 }),
+      ...spinners,
+      D(tube, 2, [0.6, 0.6, 0.62], pivot.x, tt.y + 0.026, pivot.z, 0.016, 0.016, 0.016, { rough: 0.3 }),
+      arm,
+      head,
     );
+    deck = { spinners, label: spinners[2], blank, labels, arm, head, pivot, sleeves };
   }
 
   // ---------- left wall additions: the singlet shadow box, a marathon medal, the race bib ----------
@@ -3156,6 +3213,30 @@ export function startPodRoom(
     const time = (now - t0) / 1000;
     const dt = lastNow ? Math.min(0.1, (now - lastNow) / 1000) : 0;
     lastNow = now;
+    if (deck) {
+      // a turntable gets up to 33⅓ in about a second and coasts down when stopped; the arm swings over first
+      const goal = player.playing ? (33.3 / 60) * Math.PI * 2 : 0;
+      player.speed += (goal - player.speed) * (1 - Math.exp(-dt * (player.playing ? 3 : 1.6)));
+      player.angle = (player.angle + player.speed * dt) % (Math.PI * 2);
+      for (const d of deck.spinners) d.ry = -player.angle;
+      // the stylus starts at the outer groove and drifts inward over the 30 seconds of a preview
+      const into = player.audio && player.audio.duration ? Math.min(1, player.audio.currentTime / player.audio.duration) : 0;
+      const armGoal = player.playing ? 0.55 - 0.15 * into : 1.0;
+      player.arm = player.arm ? player.arm + (armGoal - player.arm) * (1 - Math.exp(-dt * 5)) : armGoal;
+      const ca = Math.cos(player.arm);
+      const sa = Math.sin(player.arm);
+      deck.arm.x = deck.pivot.x - 0.055 * ca;
+      deck.arm.z = deck.pivot.z + 0.055 * sa;
+      deck.arm.ry = player.arm;
+      deck.head.x = deck.pivot.x - 0.11 * ca;
+      deck.head.z = deck.pivot.z + 0.11 * sa;
+      deck.head.ry = player.arm;
+      deck.sleeves.forEach((sl, n) => {
+        sl.lift += ((player.playing && player.record === n ? 0.09 : 0) - sl.lift) * (1 - Math.exp(-dt * 6));
+        sl.d.x = sl.x + sl.out[0] * sl.lift;
+        sl.d.z = sl.z + sl.out[1] * sl.lift;
+      });
+    }
     const goalK = focusId ? 1 : 0;
     if (focusId) {
       const d = draws.find((x) => x.anchor === focusId);
@@ -3219,7 +3300,8 @@ export function startPodRoom(
         hitY = y;
       }
     }
-    const key = hitBook ? `${hitBook.title}|${hitBook.author ?? ''}` : '';
+    const onDeck = hitBook?.record !== undefined && hitBook.record === player.record && player.playing;
+    const key = hitBook ? `${hitBook.title}|${hitBook.author ?? ''}|${onDeck}` : '';
     if (key !== tipKey) {
       tipKey = key;
       tip.textContent = '';
@@ -3237,8 +3319,14 @@ export function startPodRoom(
           go.textContent = `Click: ${hitBook.link.label.toLowerCase()} ↗`;
           tip.appendChild(go);
         }
+        if (hitBook.record !== undefined) {
+          const go = document.createElement('em');
+          go.textContent = onDeck ? `Playing "${RECORDS[hitBook.record].track}" · click to stop` : `Click: play "${RECORDS[hitBook.record].track}"`;
+          tip.appendChild(go);
+        }
       }
       tipHref = hitBook?.link?.href ?? '';
+      tipRecord = hitBook?.record ?? -1;
       tip.classList.toggle('pod-booktip--on', !!hitBook);
     }
     if (hitBook) tip.style.transform = `translate(${Math.round(hitX)}px, ${Math.round(hitY - 70)}px) translateX(-50%)`;
@@ -3476,6 +3564,8 @@ export function startPodRoom(
     },
     dispose: () => {
       tip.remove();
+      stopRecord();
+      if (player.audio) player.audio.src = '';
       document.removeEventListener('click', openBook);
       document.removeEventListener('pointerdown', dragStart);
       document.removeEventListener('pointermove', dragMove);

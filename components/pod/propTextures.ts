@@ -566,6 +566,32 @@ export function sleeve(title: string, artist: string, color: string, ink: string
   return c;
 }
 
+/** The paper label in the middle of a record, in the album colour, with the title round the top and the artist
+ * under the spindle hole. The type is what shows the record turning. */
+export function recordLabel(title: string, artist: string, color: string, ink: string, w = 256) {
+  const { c, g } = make(w, w);
+  const r = w / 2;
+  g.fillStyle = '#0b0b0d';
+  g.fillRect(0, 0, w, w);
+  g.fillStyle = color === '#141414' || color === '#2a2a2e' ? '#e8e2d4' : color;
+  g.beginPath();
+  g.arc(r, r, r * 0.98, 0, Math.PI * 2);
+  g.fill();
+  const text = color === '#141414' || color === '#2a2a2e' ? '#141414' : ink;
+  g.fillStyle = text;
+  g.textAlign = 'center';
+  g.font = `900 ${w * 0.15}px ${DISPLAY}`;
+  g.fillText(title.length > 12 ? title.split(' ').slice(-2).join(' ') : title, r, r * 0.62);
+  g.font = `800 ${w * 0.075}px ${BODY}`;
+  g.fillText(artist.toUpperCase(), r, r * 1.55);
+  g.fillRect(r * 0.55, r * 1.2, r * 0.9, w * 0.012);
+  g.fillStyle = '#0b0b0d';
+  g.beginPath();
+  g.arc(r, r, w * 0.03, 0, Math.PI * 2);
+  g.fill();
+  return c;
+}
+
 /** A face button's top: dark rubber with the coloured outline glyph (triangle, circle, cross, square). */
 export function faceGlyph(shape: 'triangle' | 'circle' | 'cross' | 'square', w = 256, h = 256) {
   const { c, g } = make(w, h);
