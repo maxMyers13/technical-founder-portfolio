@@ -116,11 +116,19 @@ console.log(`matched ${files.length} files`);
 
 const records = [];
 let skipped = 0;
+const unpublished = [];
 for (const rel of files) {
   const raw = await fs.readFile(path.join(wikiDir, rel), 'utf8');
   const { meta, body } = parseFrontmatter(raw);
   if (isPlaceholder(body)) {
     skipped++;
+    continue;
+  }
+  // The index is public, and a post is only known to be published once it has
+  // its canonical LinkedIn url. No url means a draft, a post still waiting to
+  // go out, or the folder's README: none of those belong in the archive.
+  if (!meta.url) {
+    unpublished.push(rel);
     continue;
   }
   const kept = Object.fromEntries(
@@ -132,7 +140,10 @@ for (const rel of files) {
   }
 }
 
-console.log(`posts   ${files.length - skipped} with bodies (${skipped} placeholders skipped)`);
+console.log(
+  `posts   ${files.length - skipped - unpublished.length} published (${skipped} placeholders skipped)`,
+);
+for (const rel of unpublished) console.log(`  no url, left out: ${rel}`);
 
 // The site's own pages: what Ask WM3 promises to answer from besides the posts.
 // These live in this repo, are authored to be public, and cite an in-app route
