@@ -13,6 +13,7 @@ import Speaking from './components/screens/Speaking';
 import Writing from './components/screens/Writing';
 import { useWm3Chat } from './hooks/useWm3Chat';
 import { BuildFilter, Route } from './types';
+import Builder from './components/builder/Builder';
 
 /**
  * Every screen has a hash, so a page can be linked to, bookmarked, and reached
@@ -26,6 +27,8 @@ const ROUTE_HASH: Record<Route, string> = {
   life: 'life',
   lilo: 'lilo',
   speaking: 'speaking',
+  // the character builder: not on any bar, reached by its link
+  builder: 'builder',
 };
 
 const HASH_ROUTE: Record<string, Route> = Object.fromEntries(
@@ -102,18 +105,21 @@ const App: React.FC = () => {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+  const page = route !== 'home' && route !== 'builder';
   return (
     <div
-      className={route === 'home' ? undefined : 'craft'}
+      className={route === 'home' || route === 'builder' ? undefined : 'craft'}
       style={route === 'home' ? { minHeight: '100vh', background: 'var(--bg)' } : undefined}
     >
+      {/* The character builder is a full-screen tool of its own, with no site chrome round it. */}
+      {route === 'builder' && <Builder onNavigate={navigate} />}
       {/* Home is the pod: a full-bleed room with its own header, console and footer. */}
       {route === 'home' && <Pod onNavigate={navigate} onAsk={askFromAnywhere} />}
 
       {/* Every other page wears the pod's materials: its header, a diorama with the page's sign, a stitched sheet. */}
-      {route !== 'home' && <CraftHeader route={route} onNavigate={navigate} />}
-      {route !== 'home' && <LevelBanner route={route} compact={route === 'ask'} />}
-      {route !== 'home' && (
+      {page && <CraftHeader route={route} onNavigate={navigate} />}
+      {route !== 'home' && route !== 'builder' && <LevelBanner route={route} compact={route === 'ask'} />}
+      {page && (
         <div className="craft-sheet">
           {route === 'writing' && <Writing onNavigate={navigate} />}
           {route === 'builds' && (
@@ -144,10 +150,10 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {route !== 'home' && <Footer onNavigate={navigate} onNavigateToName={navigateToName} />}
+      {page && <Footer onNavigate={navigate} onNavigateToName={navigateToName} />}
 
       {/* Phones: one dock at the bottom of every screen, the room included. */}
-      <TabBar route={route} onNavigate={navigate} />
+      {route !== 'builder' && <TabBar route={route} onNavigate={navigate} />}
     </div>
   );
 };

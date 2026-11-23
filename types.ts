@@ -1,4 +1,4 @@
-export type Route = 'home' | 'writing' | 'builds' | 'ask' | 'life' | 'lilo' | 'speaking';
+export type Route = 'home' | 'writing' | 'builds' | 'ask' | 'life' | 'lilo' | 'speaking' | 'builder';
 
 export type Theme = 'system' | 'light' | 'dark';
 

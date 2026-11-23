@@ -1776,9 +1776,9 @@ export function energyCanWrap(w = 512, h = 512) {
  * room. The texture runs along her spine (left edge at the rear hem, right edge at the hood's rim) and round her
  * body. The patch sits with its top toward her head, the way it reads on a hoodie she is wearing.
  */
-export function cocoHoodie(w = 1024, h = 1024) {
+export function cocoHoodie(color = '#1f5a3a', wings = true, v = COCO_PATCH.v, w = 1024, h = 1024) {
   const { c, g } = make(w, h);
-  g.fillStyle = '#1f5a3a';
+  g.fillStyle = color;
   g.fillRect(0, 0, w, h);
   // knit: fine ribs along her length, a little mottling
   g.fillStyle = 'rgba(0, 0, 0, 0.1)';
@@ -1795,9 +1795,9 @@ export function cocoHoodie(w = 1024, h = 1024) {
   // the patch: only the shield and its wings, cut out of the square patch art, so nothing reads as a card
   const patch = wingsPatch(512, 512);
   const S = COCO_PATCH.size * w;
-  for (const dv of [0, 1]) {
+  for (const dv of wings ? [0, 1] : []) {
     g.save();
-    g.translate(COCO_PATCH.u * w, (COCO_PATCH.v + dv) * h);
+    g.translate(COCO_PATCH.u * w, (v + dv) * h);
     g.scale(1, COCO_PATCH.around);
     g.rotate(COCO_PATCH.turn);
     g.beginPath();

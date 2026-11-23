@@ -13,6 +13,7 @@ import { BOOKS, RECORDS, SHELF_TOPICS, bookLink, clothFor, isOwn, nowReading } f
 import { GAMES, caseFor } from './games';
 import { LEARNING } from './learning';
 import { AUDIOBOOKS } from './audiobooks';
+import { COCO, buildCoco, type CocoBuild, type CocoMat, type CocoParams } from './coco';
 import { lookAt, mul, normalMat3, ortho, perspective, transformPoint, trs } from './math';
 import { LOOT, type PropName } from './loot';
 import { loadGLB } from './glbLoader';
@@ -29,7 +30,17 @@ export type PodRoom = {
   focus: (id: WorldId | Place | null) => void;
   setCalm: (calm: boolean) => void;
   setPointer: (x: number, y: number) => void;
+  /** The builder: rebuild Coco from new parameters. */
+  setCoco: (p: CocoParams) => void;
+  /** The builder: `studio` shows Coco alone on a plain stage; `orbit` puts the camera round her instead of the room's. */
+  setView: (v: BuilderView) => void;
   dispose: () => void;
+};
+
+export type BuilderView = {
+  studio: boolean;
+  /** `shift` slides her off centre by a fraction of the half-frame, to sit clear of the builder's panels. */
+  orbit: { yaw: number; pitch: number; dist: number; on: 'body' | 'head'; shift?: [number, number] } | null;
 };
 
 type CpuMesh = { interleaved: Float32Array; indices: Uint16Array | Uint32Array };
@@ -1388,12 +1399,15 @@ export function startPodRoom(
     onReady: () => void;
     onAnchors: (anchors: Anchor[]) => void;
     onFail: (message: string) => void;
+    /** The character builder drives this room: no hover labels, no drag-to-pan, no clicks through to links. */
+    builder?: boolean;
+    coco?: CocoParams;
   },
 ): PodRoom {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
   if (!gl) {
     hooks.onFail('WebGL2 is not available');
-    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, dispose: () => {} };
+    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, setCoco: () => {}, setView: () => {}, dispose: () => {} };
   }
 
   let failed = false;
@@ -1431,7 +1445,7 @@ export function startPodRoom(
     finalP = program(gl, DOF_VS, FINAL_FS);
   } catch (err) {
     fail(err instanceof Error ? err.message : 'shader failed');
-    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, dispose: () => {} };
+    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, setCoco: () => {}, setView: () => {}, dispose: () => {} };
   }
 
   const box = upload(gl, boxMesh());
@@ -1444,7 +1458,7 @@ export function startPodRoom(
   const quadBuf = gl.createBuffer();
   if (!quad || !quadBuf) {
     fail('Could not allocate the frame');
-    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, dispose: () => {} };
+    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, setCoco: () => {}, setView: () => {}, dispose: () => {} };
   }
   gl.bindVertexArray(quad);
   gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
@@ -1673,6 +1687,7 @@ export function startPodRoom(
   // Hovering a book or a game shows its title in a small card that follows the pointer.
   const tip = document.createElement('div');
   tip.className = 'pod-booktip';
+  if (hooks.builder) tip.style.display = 'none';
   tip.setAttribute('aria-hidden', 'true');
   canvas.parentElement?.appendChild(tip);
   let tipKey = '';
@@ -1764,10 +1779,12 @@ export function startPodRoom(
     dragFrom = null;
     scene?.classList.remove('pod-scene--dragging');
   };
-  document.addEventListener('pointerdown', dragStart);
-  document.addEventListener('pointermove', dragMove);
-  document.addEventListener('pointerup', dragEnd);
-  document.addEventListener('pointercancel', dragEnd);
+  if (!hooks.builder) {
+    document.addEventListener('pointerdown', dragStart);
+    document.addEventListener('pointermove', dragMove);
+    document.addEventListener('pointerup', dragEnd);
+    document.addEventListener('pointercancel', dragEnd);
+  }
   const openBook = (e: MouseEvent) => {
     if (dragged) {
       dragged = false; // the click that ends a drag opens nothing
@@ -1777,9 +1794,96 @@ export function startPodRoom(
     if (tipRecord >= 0) return playRecord(tipRecord);
     window.open(tipHref, '_blank', 'noopener,noreferrer');
   };
-  document.addEventListener('click', openBook);
+  if (!hooks.builder) document.addEventListener('click', openBook);
   const room: Draw[] = [];
   const add = (...d: Draw[]) => room.push(...d);
+
+  // ---------- Coco (coco.ts): built, rebuilt by the builder, and moved between the room and the studio ----------
+  const MM_COCO = 0.2 / 430; // world units per millimetre, the same as the measured props
+  let cocoDraws: Draw[] = [];
+  let cocoBuild: CocoBuild | null = null;
+  let cocoRoomSpot = { x: 0, y: 0, z: 0, yaw: 0 };
+  let cocoSpot = cocoRoomSpot;
+  const cocoHit: BookHit = { title: 'Coco', author: 'asleep under the desk in her Survey Corps hoodie', x: 0, y: 0, z: 0 };
+  const lin = (hex: string): [number, number, number] => {
+    const v = parseInt(hex.replace('#', ''), 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255].map((c) => Math.pow(c / 255, 2.2)) as [number, number, number];
+  };
+  const mixT = (a: [number, number, number], b: [number, number, number], t: number): [number, number, number] => [
+    a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t,
+  ];
+  const hoodieTexes = new Map<string, WebGLTexture>();
+  const hoodieTex = (color: string, wings: boolean) => {
+    const key = `${color}|${wings}`;
+    if (!hoodieTexes.has(key)) hoodieTexes.set(key, paintTex(() => P.cocoHoodie(color, wings, 0.25)));
+    return hoodieTexes.get(key)!;
+  };
+  /** Where her parts go in the world: her own frame (mm) turned by the spot's yaw and set on its floor. */
+  const cocoWorld = (q: [number, number, number]) => {
+    const c = Math.cos(cocoSpot.yaw), sn = Math.sin(cocoSpot.yaw);
+    const x = q[0] * MM_COCO, y = q[1] * MM_COCO, z = q[2] * MM_COCO;
+    return { x: cocoSpot.x + x * c + z * sn, y: cocoSpot.y + y, z: cocoSpot.z - x * sn + z * c };
+  };
+  const placeCoco = () => {
+    for (const d of cocoDraws) {
+      d.x = cocoSpot.x;
+      d.y = cocoSpot.y;
+      d.z = cocoSpot.z;
+      d.ry = cocoSpot.yaw;
+    }
+    if (cocoBuild) Object.assign(cocoHit, cocoWorld(cocoBuild.head));
+  };
+  const makeCoco = (p: CocoParams): Draw[] => {
+    const b = buildCoco(p);
+    cocoBuild = b;
+    const coat = lin(p.coat);
+    const furRough = 0.8 - p.coatSheen * 0.5;
+    const look: Record<CocoMat, { kind: number; tint: [number, number, number]; rough: number; wrap?: number; metal?: number; tex?: WebGLTexture }> = {
+      coat: { kind: 2, tint: coat, rough: furRough, wrap: 0.3 },
+      muzzle: { kind: 2, tint: mixT(coat, lin(p.greyColor), Math.min(1, 0.35 + p.muzzleGrey * 0.65)), rough: furRough + 0.05, wrap: 0.3 },
+      nose: { kind: 2, tint: [0.012, 0.01, 0.01], rough: 0.22 },
+      eye: { kind: 2, tint: mixT(lin(p.eyeColor), [0, 0, 0], 0.35), rough: 0.06 },
+      lidline: { kind: 2, tint: [0.008, 0.006, 0.006], rough: 0.6 },
+      patch: { kind: 1, tint: lin(p.patchColor), rough: 0.85, wrap: 0.3 },
+      socks: { kind: 1, tint: lin(p.patchColor), rough: 0.85, wrap: 0.3 },
+      tan: { kind: 1, tint: lin(p.tanColor), rough: 0.8, wrap: 0.3 },
+      hoodie: { kind: 2, tint: [1, 1, 1], rough: 0.88, wrap: 0.45, tex: hoodieTex(p.hoodieColor, p.wings) },
+      hood: { kind: 1, tint: lin(p.hoodieColor), rough: 0.9, wrap: 0.45 },
+      collar: { kind: 2, tint: lin(p.collarColor), rough: 0.45 },
+      tag: { kind: 2, tint: [0.75, 0.55, 0.2], rough: 0.25, metal: 1 },
+    };
+    const out: Draw[] = [];
+    for (const [mat, raw] of Object.entries(b.meshes) as [CocoMat, NonNullable<CocoBuild['meshes'][CocoMat]>][]) {
+      const nv = raw.pos.length / 3;
+      if (!nv) continue;
+      const inter = new Float32Array(nv * 10);
+      for (let i = 0; i < nv; i++) {
+        inter.set([raw.pos[i * 3], raw.pos[i * 3 + 1], raw.pos[i * 3 + 2], raw.nrm[i * 3], raw.nrm[i * 3 + 1], raw.nrm[i * 3 + 2], raw.uv[i * 2], raw.uv[i * 2 + 1], 1, 0], i * 10);
+      }
+      const idx = nv > 65535 ? new Uint32Array(raw.idx) : new Uint16Array(raw.idx);
+      const L = look[mat];
+      out.push(
+        D(upload(gl, { interleaved: inter, indices: idx }), L.kind, L.tint, cocoSpot.x, cocoSpot.y, cocoSpot.z, MM_COCO, MM_COCO, MM_COCO, {
+          ry: cocoSpot.yaw,
+          rough: L.rough,
+          wrap: L.wrap ?? 0.2,
+          metal: L.metal ?? 0,
+          tex: L.tex ?? null,
+          bob: 1.2 * MM_COCO,
+          phase: 0.4,
+        }),
+      );
+    }
+    Object.assign(cocoHit, cocoWorld(b.head));
+    const sleeping = p.pose === 'curled' || p.pose === 'side' || p.eyes === 'closed';
+    cocoHit.author = `${sleeping ? 'asleep' : 'lying'} under the desk${p.hoodie ? ' in her Survey Corps hoodie' : ''}`;
+    return out;
+  };
+  /** The builder's stage: a plain floor and a sweep of backdrop out in the open middle of the room. */
+  const STUDIO = { x: 0, y: 0, z: 1.05, yaw: -Math.PI / 2 + 0.5 };
+  let studio = false;
+  let studioDraws: Draw[] = [];
+  let orbit: BuilderView['orbit'] = null;
   const hash = (i: number, k: number) => {
     const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
     return v - Math.floor(v);
@@ -2533,72 +2637,15 @@ export function startPodRoom(
     add(...prop('whiteboard', wb.x, floorY, wb.z, deskYaw - 0.2));
     bookHits.push({ title: 'The whiteboard', author: 'this season\'s content calendar', x: wb.x, y: floorY + 1350 * MM, z: wb.z });
 
-    // Coco, asleep under the desk. From Max's photos: a lean, short-coated dog of about 50 pounds, near-black with
-    // brown in it, a greying muzzle, a thin tail and a white spot on her chest, in her green Survey Corps hoodie with
-    // the hood down. She lies curled on her side, chin on her front paws, tail wrapped round, her back (and the patch)
-    // toward the room, and she breathes slowly. Built in her own frame in millimetres (x toward her nose, y up, z
-    // toward the wall), scaled up from a small-dog sketch, and turned to lie along the desk.
+    // Coco, asleep under the desk in her Survey Corps hoodie. She is built from parameters in coco.ts, the same
+    // ones the character builder (#builder) edits, so what Max dials in there is what lies here.
     {
-      const COAT: [number, number, number] = [0.07, 0.052, 0.042];
-      const MUZZLE: [number, number, number] = [0.3, 0.26, 0.24];
-      const HOODIE: [number, number, number] = [0.07, 0.24, 0.15];
-      const SC = 1.4; // a 50 lb dog: about 1.4x the first sketch
       const base = { lx: 0.08, lz: -0.07 };
-      const yaw = deskYaw + 0.22; // nose a little toward the room
-      const bx = o.x + c0 * base.lx + s0 * base.lz;
-      const bz = o.z - s0 * base.lx + c0 * base.lz;
-      const cy = Math.cos(yaw), sy = Math.sin(yaw);
-      // z is flipped so +z (the sketch's leg side) points at the wall and her back faces the room
-      const at = (x: number, y: number, z: number) => {
-        const X = x * SC, Y = y * SC, Z = -z * SC;
-        return { x: bx + (X * cy + Z * sy) * MM, y: floorY + Y * MM, z: bz + (-X * sy + Z * cy) * MM };
-      };
-      const part = (kind: number, tint: [number, number, number], p: [number, number, number], r: [number, number, number], extra: Partial<Draw> = {}) => {
-        const q = at(p[0], p[1], p[2]);
-        return D(ball, kind, tint, q.x, q.y, q.z, r[0] * SC * MM, r[1] * SC * MM, r[2] * SC * MM, { ry: yaw, rough: 0.6, wrap: 0.2, ...extra });
-      };
-      const breathe = { bob: 3 * MM, phase: 0.4 };
-      // Every skin is lofted in her frame with z already flipped, then placed whole at her origin.
-      const flipZ = (rings: number[][]) => rings.map(([x, y, z, w, h]) => [x, y, -z, w, h]);
-      const o0 = at(0, 0, 0);
-      const skin = (rings: number[][], kind: number, tint: [number, number, number], extra: Partial<Draw> = {}, open = false, flat = 1) =>
-        D(upload(gl, loftMesh(flipZ(rings), open, 6, 28, flat)), kind, tint, o0.x, o0.y, o0.z, SC * MM, SC * MM, SC * MM, { ry: yaw, rough: 0.62, wrap: 0.25, ...extra });
-      // her spine from rump to the stop of her muzzle: [x, y, z, half-width, half-height]
-      const SPINE = [
-        [-240, 72, 20, 42, 42], [-205, 82, 20, 80, 70], [-160, 88, 20, 102, 84], [-95, 89, 13, 99, 82], [-35, 87, 6, 88, 76], [40, 94, 0, 100, 88],
-        [110, 95, 5, 102, 88], [160, 93, 13, 95, 84], [205, 90, 36, 64, 58], [238, 89, 56, 55, 50], [276, 92, 70, 68, 62],
-        [308, 87, 75, 60, 53], [332, 79, 77, 46, 40],
-      ];
-      // the hoodie follows the same spine from behind her ribs to her neck, a little proud of her coat, hood down
-      const pad = (r: number[], by: number) => [r[0], r[1] + by * 0.25, r[2], r[3] + by, r[4] + by];
-      const HOODIE_RINGS = [[-112, 89, 15, 108, 91], [-95, 89, 13, 106, 89], ...SPINE.slice(4, 9).map((r) => pad(r, 7)), [214, 90, 41, 72, 66], [222, 90, 45, 76, 70]];
-      add(
-        skin(SPINE, 1, COAT, breathe, false, 0.9),
-        // the greying muzzle carries on from the stop to her nose
-        skin([[318, 83, 76, 51, 45], [338, 77, 77, 44, 38], [368, 72, 79, 37, 30], [394, 70, 80, 31, 24]], 1, MUZZLE, breathe),
-        part(2, [0.03, 0.025, 0.025], [412, 73, 80], [14, 11, 13], { rough: 0.25, ...breathe }),
-        // closed eyes: two short dark slits
-        part(2, [0.02, 0.015, 0.015], [322, 100, 118], [12, 3, 3], { rough: 0.6, ...breathe }),
-        part(2, [0.02, 0.015, 0.015], [322, 100, 30], [12, 3, 3], { rough: 0.6, ...breathe }),
-        // her ears: soft flaps folded down either side of her skull
-        skin([[272, 132, 32, 24, 7], [266, 118, 12, 27, 7], [260, 96, 0, 20, 6], [258, 84, -3, 9, 4]], 1, COAT, breathe),
-        skin([[272, 132, 108, 24, 7], [266, 118, 128, 27, 7], [260, 96, 140, 20, 6], [258, 84, 143, 9, 4]], 1, COAT, breathe),
-        // the hood, down: a soft roll of green bunched across the back of her neck
-        skin([[208, 138, -8, 22, 20], [214, 152, 22, 34, 27], [216, 156, 48, 37, 29], [214, 152, 74, 34, 27], [208, 138, 100, 22, 20]], 1, HOODIE, { ...breathe, rough: 0.88, wrap: 0.45 }),
-        // the hoodie, with the wings printed on her back: one knitted shell, rising and falling with her
-        skin(HOODIE_RINGS, 2, [1, 1, 1], { ...breathe, tex: paintTex(() => P.cocoHoodie()), rough: 0.88, wrap: 0.45 }, true, 0.9),
-        // the hind leg folded along her side: thigh, hock, and the paw pointing forward
-        skin([[-185, 62, 88, 34, 40], [-125, 58, 106, 40, 44], [-65, 40, 117, 27, 27], [-20, 25, 121, 19, 18], [28, 20, 121, 17, 15], [48, 19, 121, 19, 15]], 1, COAT),
-        // front legs stretched out, paws together under her chin
-        skin([[150, 62, 44, 36, 38], [212, 36, 42, 27, 27], [288, 25, 40, 21, 20], [350, 21, 42, 20, 17], [370, 20, 42, 22, 16]], 1, COAT),
-        skin([[160, 58, 92, 34, 36], [220, 33, 95, 26, 25], [296, 23, 96, 20, 19], [356, 20, 96, 20, 16], [376, 19, 96, 22, 15]], 1, COAT),
-        // the white spot on her chest, just showing past the hoodie
-        part(2, [0.88, 0.86, 0.82], [222, 60, 62], [22, 16, 12], { rough: 0.8 }),
-        // her tail: thick at the root, curling round along her flank and thinning to a point
-        skin([[-232, 58, 14, 19, 18], [-272, 34, -14, 15, 14], [-276, 19, -72, 12, 11], [-238, 14, -122, 10, 9], [-172, 11, -138, 7.5, 7], [-112, 9, -128, 4.5, 4]], 1, COAT),
-      );
-      const head = at(300, 100, 70);
-      bookHits.push({ title: 'Coco', author: 'asleep under the desk in her Survey Corps hoodie', x: head.x, y: head.y, z: head.z });
+      cocoRoomSpot = { x: o.x + c0 * base.lx + s0 * base.lz, y: floorY, z: o.z - s0 * base.lx + c0 * base.lz, yaw: deskYaw + 0.22 };
+      cocoSpot = cocoRoomSpot;
+      cocoDraws = makeCoco(hooks.coco ?? COCO);
+      add(...cocoDraws);
+      bookHits.push(cocoHit);
     }
     bookHits.push({ title: 'Nintendo Switch OLED', author: 'docked · Super Smash Bros. Ultimate', x: sw.x, y: sw.y + 0.04, z: sw.z });
     // Hovering a part of a desk prop names it: each label sits on the part's centre, placed the way prop() places it.
@@ -2889,7 +2936,7 @@ export function startPodRoom(
   const shadowFb = gl.createFramebuffer();
   if (!shadowTex || !shadowFb) {
     fail('Could not allocate shadows');
-    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, dispose: () => {} };
+    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, setCoco: () => {}, setView: () => {}, dispose: () => {} };
   }
   gl.bindTexture(gl.TEXTURE_2D, shadowTex);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, SHADOW, SHADOW, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
@@ -2905,7 +2952,7 @@ export function startPodRoom(
   gl.readBuffer(gl.NONE);
   if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
     fail('Shadow buffer is incomplete');
-    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, dispose: () => {} };
+    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, setCoco: () => {}, setView: () => {}, dispose: () => {} };
   }
 
   const colorTex = gl.createTexture();
@@ -2914,7 +2961,7 @@ export function startPodRoom(
   const depthRb = gl.createRenderbuffer();
   if (!colorTex || !depthTex || !colorFb || !depthRb) {
     fail('Could not allocate the frame');
-    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, dispose: () => {} };
+    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, setCoco: () => {}, setView: () => {}, dispose: () => {} };
   }
 
   // A colour target with its own framebuffer, for the post passes.
@@ -2951,7 +2998,7 @@ export function startPodRoom(
     for (let i = 0; i < BLOOM_LEVELS; i++) bloom.push(makeTarget());
   } catch (err) {
     fail(err instanceof Error ? err.message : 'post targets failed');
-    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, dispose: () => {} };
+    return { focus: () => {}, setCalm: () => {}, setPointer: () => {}, setCoco: () => {}, setView: () => {}, dispose: () => {} };
   }
 
   // The grade as a real 3D LUT texture (32^3).
@@ -3159,8 +3206,12 @@ export function startPodRoom(
     return trs(d.x, d.y + bob, d.z + lift, d.rx, d.ry + spin, d.rz, d.sx, d.sy, d.sz);
   };
 
+  /** What the studio shows: Coco and her stage. Out of the studio the stage is hidden. */
+  const shown = (d: Draw) => (studio ? cocoDraws.includes(d) || studioDraws.includes(d) : !studioDraws.includes(d));
   const drawScene = (prog: 'beauty' | 'shadow' | 'glow', time: number) => {
     for (const d of draws) {
+      if (!shown(d)) continue;
+      if (prog === 'shadow' && studioDraws.includes(d)) continue; // the stage takes shadows but never casts them
       if (!!d.wisp !== (prog === 'glow')) continue;
       if (prog === 'shadow' && d.kind === 5) continue; // a light source doesn't cast its own shadow
       const model = modelOf(d, time);
@@ -3269,8 +3320,36 @@ export function startPodRoom(
       baseEye[1] + (camFocus[1] + 0.95 - baseEye[1]) * kk,
       baseEye[2] + (camFocus[2] + Math.cos(left.ry) * 0.2 - baseEye[2]) * kk,
     ];
-    const eye: [number, number, number] = focusId === 'desk' ? overhead : toward;
-    const target: [number, number, number] = [-0.16 + lx + (camFocus[0] + 0.16 - lx) * kk, -0.04 + (camFocus[1] + 0.04) * kk, camFocus[2] * kk];
+    let eye: [number, number, number] = focusId === 'desk' ? overhead : toward;
+    let target: [number, number, number] = [-0.16 + lx + (camFocus[0] + 0.16 - lx) * kk, -0.04 + (camFocus[1] + 0.04) * kk, camFocus[2] * kk];
+    let orbitAt: [number, number, number] | null = null;
+    if (orbit && cocoBuild) {
+      // the builder's camera: round Coco at a yaw and pitch, on her body or close on her face
+      const c = cocoWorld(orbit.on === 'head' ? cocoBuild.head : [0, cocoBuild.height * 0.45, 0]);
+      orbitAt = [c.x, c.y, c.z];
+      const yawW = orbit.yaw + cocoSpot.yaw;
+      const cp = Math.cos(orbit.pitch);
+      eye = [c.x + Math.sin(yawW) * cp * orbit.dist, c.y + Math.sin(orbit.pitch) * orbit.dist, c.z + Math.cos(yawW) * cp * orbit.dist];
+      target = orbitAt;
+      if (orbit.shift) {
+        // slide the camera sideways and up so she lands at `shift` of the half-frame from the middle
+        const fwd = [target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]];
+        const fl = Math.hypot(fwd[0], fwd[1], fwd[2]) || 1;
+        const right = [-fwd[2] / fl, 0, fwd[0] / fl];
+        const rl = Math.hypot(right[0], right[2]) || 1;
+        const upv = [
+          (right[1] * fwd[2] - right[2] * fwd[1]) / (rl * fl), (right[2] * fwd[0] - right[0] * fwd[2]) / (rl * fl), (right[0] * fwd[1] - right[1] * fwd[0]) / (rl * fl),
+        ];
+        const halfH = orbit.dist * Math.tan((17 * Math.PI) / 180);
+        const halfW = halfH * (bw / bh);
+        const dx = -orbit.shift[0] * halfW, dy = -orbit.shift[1] * halfH;
+        for (const v of [eye, target]) {
+          v[0] += (right[0] / rl) * dx + upv[0] * dy;
+          v[1] += (right[1] / rl) * dx + upv[1] * dy;
+          v[2] += (right[2] / rl) * dx + upv[2] * dy;
+        }
+      }
+    }
     const view = lookAt(eye, target, [0, 1, 0]);
     // Keep the whole room in frame at any window shape: 34 degrees tall at 16:9, wider when the window is narrower.
     // A phone held upright stops widening at the shrine and its neighbours (swipe to see the rest), so things stay
@@ -3500,7 +3579,7 @@ export function startPodRoom(
     });
 
     // 5. tilt-shift + DOF, chromatic aberration, ACES, LUT grade, halation, vignette, grain -> screen
-    const fp: [number, number, number] = [-0.02 + (camFocus[0] + 0.02) * kk, 0.16 + (camFocus[1] - 0.16) * kk, 0.4 + (camFocus[2] - 0.4) * kk];
+    const fp: [number, number, number] = orbitAt ?? [-0.02 + (camFocus[0] + 0.02) * kk, 0.16 + (camFocus[1] - 0.16) * kk, 0.4 + (camFocus[2] - 0.4) * kk];
     const focusPoint = transformPoint(view, fp[0], fp[1], fp[2]);
     const focusUv = toUv(fp[0], fp[1], fp[2]);
     pass(finalP, null, () => {
@@ -3561,6 +3640,36 @@ export function startPodRoom(
     setPointer: (x, y) => {
       pointerX = x;
       pointerY = y;
+    },
+    setCoco: (p) => {
+      if (failed) return;
+      const old = cocoDraws;
+      cocoDraws = makeCoco(p);
+      placeCoco();
+      for (const d of old) {
+        const i = draws.indexOf(d);
+        if (i >= 0) draws.splice(i, 1);
+        gl.deleteVertexArray(d.mesh.vao);
+      }
+      draws.push(...cocoDraws);
+    },
+    setView: (v) => {
+      if (failed) return;
+      if (v.studio && !studioDraws.length) {
+        studioDraws = [
+          // a pale floor and four pale walls all round, far enough out that the camera never reaches them
+          D(box, 2, [0.42, 0.4, 0.37], STUDIO.x, floorY - 0.01, STUDIO.z, 4.4, 0.02, 4.4, { rough: 1, wrap: 0.5 }),
+          ...[0, 1, 2, 3].map((k) => {
+            const a = (k * Math.PI) / 2;
+            return D(box, 2, [0.36, 0.35, 0.34], STUDIO.x + Math.sin(a) * 2.1, floorY + 1, STUDIO.z + Math.cos(a) * 2.1, 4.4, 2.2, 0.02, { ry: a, rough: 1, wrap: 0.6 });
+          }),
+        ];
+        draws.push(...studioDraws);
+      }
+      studio = v.studio;
+      orbit = v.orbit;
+      cocoSpot = studio ? { ...STUDIO, y: floorY } : cocoRoomSpot;
+      placeCoco();
     },
     dispose: () => {
       tip.remove();

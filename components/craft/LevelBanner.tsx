@@ -143,7 +143,7 @@ const Spot = () => (
 );
 
 /** The page's sign, its colour, a short line under it, and the props on the set. */
-const SETS: Record<Exclude<Route, 'home'>, { title: string; sub: string; felt: string; props: Prop[] }> = {
+const SETS: Record<Exclude<Route, 'home' | 'builder'>, { title: string; sub: string; felt: string; props: Prop[] }> = {
   writing: {
     title: 'Writing',
     sub: 'guides, written properly',
@@ -205,7 +205,7 @@ const SETS: Record<Exclude<Route, 'home'>, { title: string; sub: string; felt: s
   },
 };
 
-const LevelBanner: React.FC<{ route: Exclude<Route, 'home'>; compact?: boolean }> = ({ route, compact }) => {
+const LevelBanner: React.FC<{ route: Exclude<Route, 'home' | 'builder'>; compact?: boolean }> = ({ route, compact }) => {
   const set = SETS[route];
   const stage = useRef<HTMLDivElement>(null);
 
