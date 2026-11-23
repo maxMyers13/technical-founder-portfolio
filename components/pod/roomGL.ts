@@ -13,7 +13,7 @@ import { BOOKS, RECORDS, SHELF_TOPICS, bookLink, clothFor, isOwn, nowReading } f
 import { GAMES, caseFor } from './games';
 import { LEARNING } from './learning';
 import { AUDIOBOOKS } from './audiobooks';
-import { COCO, buildCoco, type CocoBuild, type CocoMat, type CocoParams } from './coco';
+import { COCO, buildCoco, normalizeCoco, type CocoBuild, type CocoMat, type CocoParams } from './coco';
 import { lookAt, mul, normalMat3, ortho, perspective, transformPoint, trs } from './math';
 import { LOOT, type PropName } from './loot';
 import { loadGLB } from './glbLoader';
@@ -1833,22 +1833,22 @@ export function startPodRoom(
     }
     if (cocoBuild) Object.assign(cocoHit, cocoWorld(cocoBuild.head));
   };
-  const makeCoco = (p: CocoParams): Draw[] => {
+  const makeCoco = (pIn: CocoParams): Draw[] => {
+    const p = normalizeCoco(pIn);
     const b = buildCoco(p);
     cocoBuild = b;
     const coat = lin(p.coat);
     const furRough = 0.8 - p.coatSheen * 0.5;
     const look: Record<CocoMat, { kind: number; tint: [number, number, number]; rough: number; wrap?: number; metal?: number; tex?: WebGLTexture }> = {
       coat: { kind: 2, tint: coat, rough: furRough, wrap: 0.3 },
-      muzzle: { kind: 2, tint: mixT(coat, lin(p.greyColor), Math.min(1, 0.35 + p.muzzleGrey * 0.65)), rough: furRough + 0.05, wrap: 0.3 },
+      marks: { kind: 2, tint: mixT(coat, lin(p.markColor), p.markings), rough: furRough + 0.05, wrap: 0.3 },
+      muzzle: { kind: 2, tint: mixT(coat, lin(p.greyColor), Math.min(1, 0.3 + p.muzzleGrey * 0.7)), rough: furRough + 0.05, wrap: 0.3 },
       nose: { kind: 2, tint: [0.012, 0.01, 0.01], rough: 0.22 },
-      eye: { kind: 2, tint: mixT(lin(p.eyeColor), [0, 0, 0], 0.35), rough: 0.06 },
-      lidline: { kind: 2, tint: [0.008, 0.006, 0.006], rough: 0.6 },
+      eye: { kind: 2, tint: [0.02, 0.012, 0.008], rough: 0.08 },
+      shine: { kind: 2, tint: [0.8, 0.78, 0.74], rough: 0.1 },
       patch: { kind: 1, tint: lin(p.patchColor), rough: 0.85, wrap: 0.3 },
       socks: { kind: 1, tint: lin(p.patchColor), rough: 0.85, wrap: 0.3 },
-      tan: { kind: 1, tint: lin(p.tanColor), rough: 0.8, wrap: 0.3 },
       hoodie: { kind: 2, tint: [1, 1, 1], rough: 0.88, wrap: 0.45, tex: hoodieTex(p.hoodieColor, p.wings) },
-      hood: { kind: 1, tint: lin(p.hoodieColor), rough: 0.9, wrap: 0.45 },
       collar: { kind: 2, tint: lin(p.collarColor), rough: 0.45 },
       tag: { kind: 2, tint: [0.75, 0.55, 0.2], rough: 0.25, metal: 1 },
     };
@@ -1875,7 +1875,7 @@ export function startPodRoom(
       );
     }
     Object.assign(cocoHit, cocoWorld(b.head));
-    const sleeping = p.pose === 'curled' || p.pose === 'side' || p.eyes === 'closed';
+    const sleeping = p.pose === 'rest' || p.eyes === 'closed';
     cocoHit.author = `${sleeping ? 'asleep' : 'lying'} under the desk${p.hoodie ? ' in her Survey Corps hoodie' : ''}`;
     return out;
   };

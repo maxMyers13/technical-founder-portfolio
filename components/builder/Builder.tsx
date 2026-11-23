@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Route } from '../../types';
 import { startPodRoom, type BuilderView, type PodRoom } from '../pod/roomGL';
-import { COCO, COCO_BASE, CONTROLS, PRESETS, type CocoParams, type Control } from '../pod/coco';
+import { COCO, COCO_BASE, CONTROLS, PRESETS, normalizeCoco, type CocoParams, type Control } from '../pod/coco';
 import './builder.css';
 
 /**
@@ -60,7 +60,7 @@ const fmt = (c: Control, v: number) => {
 };
 
 const Builder: React.FC<{ onNavigate: (r: Route) => void }> = ({ onNavigate }) => {
-  const [params, setParams] = useState<CocoParams>(() => ({ ...COCO, ...readJson<Partial<CocoParams>>(STORE, {}), ...(fromUrl() ?? {}) }));
+  const [params, setParams] = useState<CocoParams>(() => normalizeCoco({ ...COCO, ...readJson<Partial<CocoParams>>(STORE, {}), ...(fromUrl() ?? {}) }));
   const [group, setGroup] = useState(CONTROLS[0].group);
   const [mode, setMode] = useState<ViewMode>('studio');
   const [cam, setCam] = useState({ ...CAMS[0] });
@@ -441,7 +441,7 @@ const Builder: React.FC<{ onNavigate: (r: Route) => void }> = ({ onNavigate }) =
         <div className="bld__slots" role="group" aria-label="Save slots">
           {slots.map((sl, i) => (
             <span key={i} className="bld__slot">
-              <button type="button" disabled={!sl} onClick={() => sl && commit({ ...COCO_BASE, ...sl })} title={sl ? 'Load' : 'Empty'}>
+              <button type="button" disabled={!sl} onClick={() => sl && commit(normalizeCoco({ ...COCO_BASE, ...sl }))} title={sl ? 'Load' : 'Empty'}>
                 {i + 1}
               </button>
               <button type="button" className="bld__slotsave" onClick={() => saveSlot(i)} title={`Save to slot ${i + 1}`}>
